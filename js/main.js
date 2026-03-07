@@ -44,14 +44,14 @@
     dom.guideScreen.classList.add("hidden");
   }
 
-  function startLevel(level) {
+  function startEndless() {
     showGameScreen();
-    App.game.startLevel(level);
+    App.game.startEndless();
   }
 
   function bindMenuActions() {
-    dom.btnPlay.addEventListener("click", () => startLevel(1));
-    dom.btnQuick.addEventListener("click", () => startLevel(1));
+    dom.btnPlay.addEventListener("click", () => startEndless());
+    dom.btnQuick.addEventListener("click", () => startEndless());
 
     dom.btnGuide.addEventListener("click", () => {
       dom.guideScreen.classList.remove("hidden");
@@ -71,13 +71,12 @@
 
     dom.levelButtons.forEach((btn) => {
       btn.addEventListener("click", () => {
-        const level = Number(btn.dataset.level || "1");
-        startLevel(level);
+        startEndless();
       });
     });
 
     dom.btnRestart.addEventListener("click", () => {
-      startLevel(App.state.level || 1);
+      startEndless();
     });
 
     dom.btnBackMenu.addEventListener("click", () => {
@@ -85,8 +84,7 @@
     });
 
     dom.btnNextLevel.addEventListener("click", () => {
-      const next = Math.min(3, (App.state.level || 1) + 1);
-      startLevel(next);
+      startEndless();
     });
   }
 

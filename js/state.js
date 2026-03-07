@@ -36,6 +36,9 @@
     spawnQueue: [],
     spawnTimer: 0,
     spawnedInWave: 0,
+    waveTimer: 0,
+    bossSpawnedInWave: false,
+    bossKilledInWave: false,
 
     supplies: config.resources.startSupplies,
     commandPoints: config.resources.startCommandPoints,
@@ -91,31 +94,30 @@
     },
 
     availableSlots: [],
-    levelCompletedFlags: {
-      1: false,
-      2: false,
-      3: false,
-    },
+    towerTech: {},
 
     bus: createEventBus(),
   };
 
-  App.resetStateForRun = function resetStateForRun(level) {
+  App.resetStateForRun = function resetStateForRun() {
     const s = App.state;
     s.mode = "playing";
     s.paused = false;
-    s.level = level || 1;
+    s.level = 1;
     s.wave = 0;
-    s.globalWave = (s.level - 1) * config.wave.maxWavePerLevel;
+    s.globalWave = 0;
     s.wavePhase = "idle";
     s.prepTimer = 0;
     s.currentWaveSpec = null;
     s.spawnQueue = [];
     s.spawnTimer = 0;
     s.spawnedInWave = 0;
+    s.waveTimer = 0;
+    s.bossSpawnedInWave = false;
+    s.bossKilledInWave = false;
 
-    s.supplies = config.resources.startSupplies + (s.level - 1) * 120;
-    s.commandPoints = config.resources.startCommandPoints + (s.level - 1);
+    s.supplies = config.resources.startSupplies;
+    s.commandPoints = config.resources.startCommandPoints;
 
     s.quizCooldown = 0;
     s.quizUsedIndexes = [];
@@ -147,9 +149,23 @@
     s.stats.playSeconds = 0;
     s.stats.wavesCleared = 0;
     s.stats.damageToBase = 0;
-    s.stats.levelCleared = s.level;
+    s.stats.levelCleared = 0;
 
     s.result.state = null;
     s.result.reason = "";
+
+    const tech = {};
+    const order = App.towerOrder || [];
+    for (const type of order) {
+      tech[type] = {
+        level: 1,
+        pointUpgradeLevels: {
+          damage: 0,
+          hp: 0,
+          speed: 0,
+        },
+      };
+    }
+    s.towerTech = tech;
   };
 })();

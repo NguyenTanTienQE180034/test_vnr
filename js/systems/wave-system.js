@@ -2,42 +2,45 @@
   const App = (window.App = window.App || {});
   const config = App.config;
 
-  function cloneEntries(entries) {
-    return entries.map((item) => ({ ...item }));
-  }
-
-  function spawnEnemyFromEntry(state, entry) {
+  function spawnEnemyByType(state, enemyType) {
     const waveSpec = state.currentWaveSpec;
     const mapDef = App.map.getMap(state.level);
-    const enemy = new App.Enemy(entry.type, waveSpec);
+
+    const enemy = new App.Enemy(enemyType, waveSpec);
     enemy.setPosition(mapDef.spawn.x, mapDef.spawn.y);
     state.enemies.push(enemy);
     state.spawnedInWave += 1;
 
-    if (entry.isBoss || enemy.isBoss) {
+    if (enemy.isBoss) {
       state.boss.activeId = enemy.id;
       state.boss.warningTimer = 3.5;
       state.boss.healthBarVisible = true;
-      state.bus.emit(config.eventNames.BOSS_SPAWN, { enemyId: enemy.id });
+      state.bossSpawnedInWave = true;
+      state.bossKilledInWave = false;
+      state.bus.emit(config.eventNames.BOSS_SPAWN, { enemyId: enemy.id, wave: state.wave });
     }
   }
 
   function prepareNextWave(state) {
-    if (state.wave >= config.wave.maxWavePerLevel) {
-      return false;
-    }
-
     const nextWave = state.wave + 1;
     state.wave = nextWave;
-    state.globalWave = (state.level - 1) * config.wave.maxWavePerLevel + state.wave;
+    state.globalWave = nextWave;
 
-    const spec = App.wavesData.buildWave(state.level, state.wave);
+    const spec = App.wavesData.buildWave(nextWave);
+
     state.currentWaveSpec = spec;
     state.wavePhase = "prep";
     state.prepTimer = config.wave.prepDuration;
-    state.spawnQueue = cloneEntries(spec.entries);
     state.spawnTimer = 0;
     state.spawnedInWave = 0;
+    state.waveTimer = spec.durationSec;
+    state.bossSpawnedInWave = false;
+    state.bossKilledInWave = false;
+    if (state.base) {
+      state.base.healUsedThisWave = false;
+    }
+
+    state.spawnQueue = new Array(spec.enemyCount).fill(0);
 
     return true;
   }
@@ -46,10 +49,11 @@
     if (state.wavePhase !== "prep") {
       return;
     }
+
     state.wavePhase = "combat";
-    state.spawnTimer = 0.08;
+    state.spawnTimer = 0.06;
+
     state.bus.emit(config.eventNames.WAVE_START, {
-      level: state.level,
       wave: state.wave,
       globalWave: state.globalWave,
     });
@@ -59,41 +63,71 @@
     if (state.wavePhase !== "prep" || !state.currentWaveSpec) {
       return false;
     }
+
     state.supplies += state.currentWaveSpec.earlyReward;
     App.Effects.addFloatingText(state, 20, 40, `+${state.currentWaveSpec.earlyReward} early bonus`, "#8cffb8");
     startWaveNow(state);
     return true;
   }
 
-  function markLevelResult(state, resultState, reason) {
-    state.mode = "result";
-    state.result.state = resultState;
-    state.result.reason = reason;
-    state.wavePhase = "ended";
+  function clearBattlefieldForNextWave(state) {
+    state.enemies = [];
+    state.projectiles = [];
   }
 
   function resolveWaveCompleted(state) {
     state.stats.wavesCleared += 1;
+    state.supplies += 40 + state.wave * 10;
+    state.commandPoints += 1;
+
     state.bus.emit(config.eventNames.WAVE_CLEARED, {
-      level: state.level,
       wave: state.wave,
     });
 
-    if (state.wave < config.wave.maxWavePerLevel) {
-      prepareNextWave(state);
+    clearBattlefieldForNextWave(state);
+    prepareNextWave(state);
+  }
+
+  function updateCombatWave(state, dt) {
+    const spec = state.currentWaveSpec;
+    if (!spec) {
       return;
     }
 
-    state.levelCompletedFlags[state.level] = true;
+    const elapsed = spec.durationSec - state.waveTimer;
 
-    if (state.level >= 3) {
-      markLevelResult(state, "victory", "Bạn đã hoàn thành chiến dịch 1954-1965.");
-      state.bus.emit(config.eventNames.VICTORY, { level: state.level });
-      return;
+    state.waveTimer = Math.max(0, state.waveTimer - dt);
+
+    state.spawnTimer -= dt;
+    while (state.spawnTimer <= 0 && state.waveTimer > 0) {
+      const type = spec.pickEnemyType(state.spawnedInWave);
+      spawnEnemyByType(state, type);
+      if (state.spawnQueue.length > 0) {
+        state.spawnQueue.pop();
+      }
+      state.spawnTimer += spec.spawnInterval;
     }
 
-    markLevelResult(state, "levelClear", `Bạn đã vượt qua màn ${state.level}.`);
-    state.bus.emit(config.eventNames.VICTORY, { level: state.level });
+    if (!state.bossSpawnedInWave && elapsed >= spec.bossSpawnAtSec) {
+      spawnEnemyByType(state, spec.bossType);
+    }
+
+    if (state.waveTimer <= 0 && !state.bossSpawnedInWave) {
+      spawnEnemyByType(state, spec.bossType);
+    }
+
+    if (state.bossSpawnedInWave) {
+      const bossAlive = state.enemies.some((enemy) => enemy.id === state.boss.activeId && enemy.isAlive());
+      if (!bossAlive) {
+        state.bossKilledInWave = true;
+        state.boss.activeId = null;
+        state.boss.healthBarVisible = false;
+      }
+    }
+
+    if (state.waveTimer <= 0 && state.bossKilledInWave) {
+      resolveWaveCompleted(state);
+    }
   }
 
   function updateWave(state, dt) {
@@ -109,17 +143,7 @@
       return;
     }
 
-    state.spawnTimer -= dt;
-    if (state.spawnTimer <= 0 && state.spawnQueue.length > 0) {
-      const entry = state.spawnQueue.shift();
-      spawnEnemyFromEntry(state, entry);
-      state.spawnTimer = entry.delay || config.wave.spawnInterval;
-    }
-
-    const aliveEnemies = state.enemies.some((e) => e.isAlive());
-    if (state.spawnQueue.length === 0 && !aliveEnemies) {
-      resolveWaveCompleted(state);
-    }
+    updateCombatWave(state, dt);
   }
 
   App.waveSystem = {

@@ -7,13 +7,15 @@
     constructor(type, waveSpec) {
       const def = App.enemiesData[type];
       const config = App.config;
-      const level = waveSpec.level;
-      const globalWave = waveSpec.globalWave;
+      const safeWave = waveSpec || { wave: 1, globalWave: 1 };
+      const globalWave = safeWave.globalWave || safeWave.wave || 1;
+      const bossLevel = Math.max(1, safeWave.wave || globalWave);
 
       this.id = `enemy-${enemyIdSeed++}`;
       this.type = type;
       this.name = def.name;
       this.color = def.color;
+      this.visualType = def.visualType || "infantry";
       this.isBoss = !!def.isBoss;
       this.isMiniBoss = !!def.isMiniBoss;
 
@@ -22,7 +24,17 @@
       this.pathDistance = 0;
       this.x = 0;
       this.y = 0;
-      this.radius = this.isBoss ? 20 : this.isMiniBoss ? 17 : 13;
+      this.radius = this.isBoss
+        ? 24
+        : this.visualType === "tank"
+          ? 15
+          : this.visualType === "vehicle" || this.visualType === "rocket" || this.visualType === "mortar"
+            ? 14
+            : this.visualType === "drone"
+              ? 10
+              : this.visualType === "shield"
+                ? 14
+                : 13;
 
       const hpScale = Math.pow(config.scaling.hpExponent, globalWave);
       const damageScale = Math.pow(config.scaling.damageExponent, globalWave);
@@ -35,11 +47,11 @@
       let speed = def.speed * speedScale;
 
       if (this.isBoss) {
-        const bossHp = def.hp * Math.pow(config.scaling.bossHpExponent, level);
-        const bossDmg = def.damage * Math.pow(config.scaling.bossDamageExponent, level);
+        const bossHp = def.hp * Math.pow(config.scaling.bossHpExponent, bossLevel);
+        const bossDmg = def.damage * Math.pow(config.scaling.bossDamageExponent, bossLevel);
         hp = Math.max(hp, bossHp);
         damage = Math.max(damage, bossDmg);
-        armor += level * 8;
+        armor += Math.floor(bossLevel / 2) * 6;
       }
 
       this.maxHp = Math.floor(hp);

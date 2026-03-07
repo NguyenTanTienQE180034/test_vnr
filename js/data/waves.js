@@ -1,11 +1,10 @@
 ﻿(function () {
   const App = (window.App = window.App || {});
 
-  const LEVEL_POOLS = {
-    1: ["basicSoldier", "fastScout", "armoredInfantry", "sniperEnemy"],
-    2: ["basicSoldier", "fastScout", "armoredInfantry", "sniperEnemy", "heavyGunner", "commander", "apcVehicle"],
-    3: ["fastScout", "armoredInfantry", "sniperEnemy", "heavyGunner", "commander", "apcVehicle", "tank", "rocketVehicle"],
-  };
+  const BASE_POOL = ["basicSoldier", "fastScout", "armoredInfantry", "sniperEnemy"];
+  const MID_POOL = ["heavyGunner", "commander", "apcVehicle", "shieldBearer", "flameTrooper"];
+  const LATE_POOL = ["tank", "rocketVehicle", "heavyGunner", "mortarTruck", "droneSwarm"];
+  const BOSS_POOL = ["supremeBoss", "ironBehemothBoss", "shadowPhantomBoss"];
 
   function pseudoRandom(seed) {
     const x = Math.sin(seed * 712.17) * 10000;
@@ -17,78 +16,76 @@
     return pool[Math.max(0, Math.min(pool.length - 1, idx))];
   }
 
-  function buildWave(level, wave) {
+  function buildSpawnPool(wave) {
+    const pool = [...BASE_POOL];
+
+    if (wave >= 3) {
+      pool.push(...MID_POOL);
+    }
+    if (wave >= 6) {
+      pool.push(...LATE_POOL);
+    }
+    if (wave >= 10) {
+      pool.push("tank", "rocketVehicle", "commander", "flameTrooper", "mortarTruck");
+    }
+
+    return pool;
+  }
+
+  function pickEnemyType(spawnPool, wave, spawnIndex) {
+    const seed = wave * 191 + spawnIndex * 37;
+    let picked = pickFromPool(spawnPool, seed);
+
+    if (wave >= 4 && spawnIndex % 7 === 0) {
+      picked = "sniperEnemy";
+    }
+    if (wave >= 6 && spawnIndex % 5 === 0) {
+      picked = "heavyGunner";
+    }
+    if (wave >= 8 && spawnIndex % 4 === 0) {
+      picked = "apcVehicle";
+    }
+    if (wave >= 11 && spawnIndex % 3 === 0) {
+      picked = "tank";
+    }
+    if (wave >= 9 && spawnIndex % 6 === 0) {
+      picked = "droneSwarm";
+    }
+    if (wave >= 12 && spawnIndex % 5 === 0) {
+      picked = "mortarTruck";
+    }
+
+    return picked;
+  }
+
+  function buildWave(wave) {
     const config = App.config;
-    const globalWave = (level - 1) * config.wave.maxWavePerLevel + wave;
+    const globalWave = wave;
+    const durationSec = config.wave.durationSec;
+    const tier = Math.floor((wave - 1) / 3);
 
-    const baseCount = 7 + level * 2;
-    // Keep both formulas from docs, then choose stricter spawn count.
-    const countByClassic = baseCount + wave * 3;
-    const countByScalingRule = baseCount + wave * config.scaling.spawnGrowthPerWave;
-    const enemyCount = Math.max(countByClassic, countByScalingRule);
-    const tier = Math.floor(globalWave / 5);
+    const spawnPool = buildSpawnPool(wave);
+    const spawnInterval = Math.max(0.12, config.wave.baseSpawnInterval - wave * 0.015);
+    const estimatedSpawnCount = Math.floor(durationSec / spawnInterval);
+    const bossType = BOSS_POOL[(wave - 1) % BOSS_POOL.length];
 
-    const pool = LEVEL_POOLS[level] || LEVEL_POOLS[1];
-    const entries = [];
-
-    for (let i = 0; i < enemyCount; i += 1) {
-      const seed = globalWave * 97 + i * 13 + level * 41;
-      let picked = pickFromPool(pool, seed);
-
-      if (tier >= 2 && i % 6 === 0) {
-        picked = "sniperEnemy";
-      }
-      if (tier >= 3 && i % 7 === 0) {
-        picked = "heavyGunner";
-      }
-      if (level >= 2 && wave >= 4 && i % 9 === 0) {
-        picked = "commander";
-      }
-      if (level >= 2 && wave >= 6 && i % 8 === 0) {
-        picked = "apcVehicle";
-      }
-      if (level >= 3 && wave >= 7 && i % 5 === 0) {
-        picked = "tank";
-      }
-      if (level >= 3 && wave >= 8 && i % 4 === 0) {
-        picked = "rocketVehicle";
-      }
-
-      entries.push({
-        type: picked,
-        delay: 0.48 + (i % 3) * 0.12,
-      });
-    }
-
-    let special = null;
-    if (wave % 10 === 0) {
-      special = {
-        type: "supremeBoss",
-        isBoss: true,
-        delay: 1.5,
-      };
-    } else if (wave % 5 === 0) {
-      special = {
-        type: "miniBoss",
-        isMiniBoss: true,
-        delay: 1.2,
-      };
-    }
-
-    if (special) {
-      entries.push(special);
-    }
+    const bonusByWave = Math.floor(estimatedSpawnCount * 0.2) + wave * config.scaling.spawnGrowthPerWave;
+    const enemyCount = estimatedSpawnCount + bonusByWave;
 
     return {
-      level,
       wave,
       globalWave,
       enemyCount,
       tier,
-      entries,
-      earlyReward: config.wave.earlyStartRewardBase + wave * 8 + level * 10,
-      hasBoss: Boolean(special && special.isBoss),
-      hasMiniBoss: Boolean(special && special.isMiniBoss),
+      durationSec,
+      spawnInterval,
+      spawnPool,
+      bossType,
+      bossSpawnAtSec: 18,
+      earlyReward: config.wave.earlyStartRewardBase + wave * 12,
+      pickEnemyType(spawnIndex) {
+        return pickEnemyType(spawnPool, wave, spawnIndex);
+      },
     };
   }
 

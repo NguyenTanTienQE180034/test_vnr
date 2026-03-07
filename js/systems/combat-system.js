@@ -88,6 +88,66 @@
     return candidate;
   }
 
+  function pointToSegmentDistance(px, py, x1, y1, x2, y2) {
+    const vx = x2 - x1;
+    const vy = y2 - y1;
+    const wx = px - x1;
+    const wy = py - y1;
+    const lenSq = vx * vx + vy * vy;
+    if (lenSq <= 0.0001) {
+      const dx = px - x1;
+      const dy = py - y1;
+      return Math.sqrt(dx * dx + dy * dy);
+    }
+    let t = (wx * vx + wy * vy) / lenSq;
+    t = Math.max(0, Math.min(1, t));
+    const projX = x1 + t * vx;
+    const projY = y1 + t * vy;
+    const dx = px - projX;
+    const dy = py - projY;
+    return Math.sqrt(dx * dx + dy * dy);
+  }
+
+  function laserHitscan(state, tower, primaryTarget, damage) {
+    const range = tower.getEffectiveRange();
+    const corridorWidth = tower.level >= 3 ? 30 : tower.level === 2 ? 24 : 18;
+
+    const vx = primaryTarget.x - tower.x;
+    const vy = primaryTarget.y - tower.y;
+    const len = Math.sqrt(vx * vx + vy * vy) || 0.0001;
+    const dirX = vx / len;
+    const dirY = vy / len;
+    const endX = tower.x + dirX * range;
+    const endY = tower.y + dirY * range;
+
+    const targets = state.enemies
+      .filter((enemy) => enemy.isAlive())
+      .filter((enemy) => {
+        const proj = (enemy.x - tower.x) * dirX + (enemy.y - tower.y) * dirY;
+        if (proj < -6 || proj > range + enemy.radius) {
+          return false;
+        }
+        const d = pointToSegmentDistance(enemy.x, enemy.y, tower.x, tower.y, endX, endY);
+        return d <= corridorWidth + enemy.radius * 0.35;
+      })
+      .sort((a, b) => getEnemyProgress(b) - getEnemyProgress(a));
+
+    if (!targets.length) {
+      App.collisionSystem.applyDamageToEnemy(state, primaryTarget, damage, tower.damageType, tower.role);
+    } else {
+      for (const enemy of targets) {
+        App.collisionSystem.applyDamageToEnemy(state, enemy, damage, tower.damageType, tower.role);
+      }
+    }
+
+    tower.lockLaserBeam({
+      targetId: primaryTarget.id,
+      endX,
+      endY,
+    });
+
+  }
+
   function towerAttack(state, tower, primaryTarget) {
     if (!primaryTarget) {
       return;
@@ -102,6 +162,12 @@
 
     App.Effects.addMuzzle(state, tower.x, tower.y, tower.color);
 
+    if (tower.type === "laser") {
+      laserHitscan(state, tower, primaryTarget, damage);
+      tower.markFired();
+      return;
+    }
+
     const fireAt = (targetEnemy) => {
       if (!targetEnemy || !targetEnemy.isAlive()) {
         return;
@@ -109,6 +175,7 @@
       spawnProjectile(state, {
         fromType: "tower",
         fromId: tower.id,
+        towerType: tower.type,
         toType: "enemy",
         toId: targetEnemy.id,
         targetRef: targetEnemy,
@@ -123,7 +190,8 @@
         damageType: tower.damageType,
         color: tower.color,
         piercing: tower.special.piercingShots,
-        remainingPierce: tower.special.piercingShots ? 1 : 0,
+        remainingPierce: tower.special.piercingShots ? Math.max(1, tower.special.pierceCount || 1) : 0,
+        visualLevel: tower.level,
         sourceRole: tower.role,
       });
     };
@@ -192,6 +260,7 @@
       type: enemy.projectileType,
       damageType: enemy.projectileType === "missile" || enemy.projectileType === "shell" ? "explosive" : "kinetic",
       color: "#ffad92",
+      visualLevel: enemy.isBoss ? 3 : 1,
     });
     enemy.markShot();
   }
@@ -237,7 +306,7 @@
       const count = boss.phase === 1 ? 2 : boss.phase === 2 ? 3 : 4;
       for (let i = 0; i < count; i += 1) {
         const summonType = i % 2 === 0 ? "basicSoldier" : "fastScout";
-        const waveSpec = state.currentWaveSpec || { level: state.level, globalWave: state.globalWave };
+        const waveSpec = state.currentWaveSpec || { wave: state.wave, globalWave: state.globalWave };
         const summon = new App.Enemy(summonType, waveSpec);
         summon.setPosition(mapPath[0].x, mapPath[0].y);
         state.enemies.push(summon);

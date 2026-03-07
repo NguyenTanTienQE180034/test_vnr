@@ -16,7 +16,10 @@
       card.draggable = true;
       card.dataset.towerType = tower.type;
       card.innerHTML = `
-        <strong>${tower.name}</strong>
+        <div class="tower-card-head">
+          <strong>${tower.name}</strong>
+          <button class="btn btn-small tower-upgrade-quick" data-upgrade-type="${tower.type}" title="Nâng cấp nhanh trụ loại này">+</button>
+        </div>
         <div class="card-meta">Cost: ${tower.cost} | DMG: ${tower.damage} | RNG: ${Math.floor(tower.range)}</div>
         <div class="card-meta">${tower.description}</div>
       `;
@@ -32,6 +35,21 @@
         const state = App.state;
         state.drag.activeTowerType = null;
       });
+
+      const quickBtn = card.querySelector(".tower-upgrade-quick");
+      if (quickBtn) {
+        quickBtn.addEventListener("mousedown", (event) => {
+          event.preventDefault();
+          event.stopPropagation();
+        });
+        quickBtn.addEventListener("click", (event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          if (App.uiSystem && App.uiSystem.quickUpgradeByTowerType) {
+            App.uiSystem.quickUpgradeByTowerType(tower.type);
+          }
+        });
+      }
 
       container.appendChild(card);
     }
@@ -63,6 +81,9 @@
     }
 
     const tower = new App.Tower(towerType, slot.x, slot.y);
+    if (App.uiSystem && App.uiSystem.applyTowerTechToInstance) {
+      App.uiSystem.applyTowerTechToInstance(state, tower, "init");
+    }
     state.towers.push(tower);
     state.supplies -= def.cost;
     state.stats.towersBuilt += 1;

@@ -20,6 +20,19 @@
       upgradeCost: [90, 150],
       splashRadius: 0,
       targetMode: "progress",
+      levelScaling: {
+        damage: [1, 1.55, 2.3],
+        hp: [1, 1.25, 1.6],
+        attackSpeed: [1, 1.18, 1.35],
+        range: [1, 1.12, 1.22],
+        projectile: [1, 1.08, 1.16],
+        splash: [1, 1, 1],
+      },
+      pointUpgrade: {
+        damage: { costCP: 1, growth: 0.12 },
+        hp: { costCP: 1, growth: 0.16 },
+        speed: { costCP: 1, growth: 0.09 },
+      },
     },
     machineGun: {
       type: "machineGun",
@@ -39,6 +52,19 @@
       upgradeCost: [120, 220],
       splashRadius: 0,
       targetMode: "progress",
+      levelScaling: {
+        damage: [1, 1.5, 2.2],
+        hp: [1, 1.22, 1.48],
+        attackSpeed: [1, 1.25, 1.55],
+        range: [1, 1.1, 1.18],
+        projectile: [1, 1.12, 1.2],
+        splash: [1, 1, 1],
+      },
+      pointUpgrade: {
+        damage: { costCP: 1, growth: 0.09 },
+        hp: { costCP: 1, growth: 0.14 },
+        speed: { costCP: 2, growth: 0.11 },
+      },
     },
     cannon: {
       type: "cannon",
@@ -58,6 +84,19 @@
       upgradeCost: [180, 320],
       splashRadius: 80,
       targetMode: "progress",
+      levelScaling: {
+        damage: [1, 1.7, 2.6],
+        hp: [1, 1.26, 1.58],
+        attackSpeed: [1, 1.14, 1.28],
+        range: [1, 1.14, 1.24],
+        projectile: [1, 1.1, 1.2],
+        splash: [1, 1.26, 1.48],
+      },
+      pointUpgrade: {
+        damage: { costCP: 2, growth: 0.14 },
+        hp: { costCP: 1, growth: 0.15 },
+        speed: { costCP: 2, growth: 0.08 },
+      },
     },
     missile: {
       type: "missile",
@@ -77,6 +116,55 @@
       upgradeCost: [320, 500],
       splashRadius: 90,
       targetMode: "progress",
+      levelScaling: {
+        damage: [1, 1.62, 2.45],
+        hp: [1, 1.22, 1.5],
+        attackSpeed: [1, 1.18, 1.35],
+        range: [1, 1.13, 1.22],
+        projectile: [1, 1.12, 1.22],
+        splash: [1, 1.2, 1.42],
+      },
+      pointUpgrade: {
+        damage: { costCP: 2, growth: 0.16 },
+        hp: { costCP: 1, growth: 0.13 },
+        speed: { costCP: 2, growth: 0.09 },
+      },
+    },
+    laser: {
+      type: "laser",
+      name: "Trụ Laser Xuyên",
+      description: "Bắn tia xuyên mục tiêu liên tục, khắc chế đội hình dày.",
+      color: "#89ecff",
+      role: "pierce",
+      projectileType: "laser",
+      damageType: "energy",
+      damage: 42,
+      range: 230,
+      attackSpeed: 1.9,
+      hp: 360,
+      armor: 8,
+      projectileSpeed: 700,
+      cost: 260,
+      upgradeCost: [250, 390],
+      splashRadius: 0,
+      targetMode: "progress",
+      defaultSpecial: {
+        piercingShots: true,
+        pierceCount: 2,
+      },
+      levelScaling: {
+        damage: [1, 1.58, 2.28],
+        hp: [1, 1.2, 1.42],
+        attackSpeed: [1, 1.24, 1.48],
+        range: [1, 1.12, 1.2],
+        projectile: [1, 1.15, 1.25],
+        splash: [1, 1, 1],
+      },
+      pointUpgrade: {
+        damage: { costCP: 2, growth: 0.11 },
+        hp: { costCP: 1, growth: 0.12 },
+        speed: { costCP: 2, growth: 0.12 },
+      },
     },
     command: {
       type: "command",
@@ -102,6 +190,19 @@
         speedMult: 1.2,
         rangeMult: 1.1,
       },
+      levelScaling: {
+        damage: [1, 1.45, 2],
+        hp: [1, 1.3, 1.72],
+        attackSpeed: [1, 1.15, 1.28],
+        range: [1, 1.1, 1.18],
+        projectile: [1, 1.08, 1.12],
+        splash: [1, 1, 1],
+      },
+      pointUpgrade: {
+        damage: { costCP: 1, growth: 0.08 },
+        hp: { costCP: 2, growth: 0.17 },
+        speed: { costCP: 2, growth: 0.08 },
+      },
     },
     barricade: {
       type: "barricade",
@@ -121,8 +222,21 @@
       upgradeCost: [150, 260],
       splashRadius: 0,
       targetMode: "none",
+      levelScaling: {
+        damage: [1, 1, 1],
+        hp: [1, 1.4, 1.95],
+        attackSpeed: [1, 1, 1],
+        range: [1, 1, 1],
+        projectile: [1, 1, 1],
+        splash: [1, 1, 1],
+      },
+      pointUpgrade: {
+        damage: { costCP: 99, growth: 0 },
+        hp: { costCP: 1, growth: 0.2 },
+        speed: { costCP: 99, growth: 0 },
+      },
     },
   };
 
-  App.towerOrder = ["infantry", "machineGun", "cannon", "missile", "command", "barricade"];
+  App.towerOrder = ["infantry", "machineGun", "cannon", "missile", "laser", "command", "barricade"];
 })();

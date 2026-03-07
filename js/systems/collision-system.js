@@ -22,7 +22,10 @@
 
     let finalDamage = rawDamage;
 
-    if (damageType === "explosive" && (enemy.type === "tank" || enemy.type === "apcVehicle" || enemy.type === "miniBoss")) {
+    if (
+      damageType === "explosive" &&
+      (enemy.type === "tank" || enemy.type === "apcVehicle" || enemy.type === "miniBoss" || enemy.type === "shieldBearer" || enemy.type === "mortarTruck")
+    ) {
       finalDamage *= 1.25;
     }
 
@@ -100,7 +103,8 @@
         if (projectile.piercing && projectile.remainingPierce > 0) {
           projectile.remainingPierce -= 1;
           projectile.toId = "";
-          const next = state.enemies.find((e) => e.isAlive() && App.map.distance(e, projectile) < 80);
+          const chainRange = projectile.type === "laser" ? 170 : 80;
+          const next = state.enemies.find((e) => e.isAlive() && App.map.distance(e, projectile) < chainRange);
           if (next) {
             projectile.toId = next.id;
             projectile.targetRef = next;

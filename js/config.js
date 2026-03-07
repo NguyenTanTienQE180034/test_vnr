@@ -10,15 +10,22 @@
     base: {
       maxHp: 4200,
       armor: 20,
+      upgradeCost: [3, 5],
+      levelHpMultiplier: [1, 1.35, 1.8],
+      levelArmorBonus: [0, 10, 22],
+      hpBoostCostCP: 2,
+      hpBoostAmount: 380,
+      healCostCP: 2,
+      healPercent: 0.32,
     },
     resources: {
       startSupplies: 260,
       startCommandPoints: 2,
     },
     wave: {
-      maxWavePerLevel: 10,
-      prepDuration: 12,
-      spawnInterval: 0.9,
+      prepDuration: 6,
+      durationSec: 30,
+      baseSpawnInterval: 0.48,
       earlyStartRewardBase: 45,
     },
     quiz: {
@@ -32,13 +39,13 @@
       collisionRadius: 16,
     },
     scaling: {
-      hpExponent: 1.35,
-      damageExponent: 1.25,
-      speedStep: 0.02,
-      armorStepWave: 5,
-      spawnGrowthPerWave: 2,
-      bossHpExponent: 1.6,
-      bossDamageExponent: 1.4,
+      hpExponent: 1.52,
+      damageExponent: 1.38,
+      speedStep: 0.035,
+      armorStepWave: 3,
+      spawnGrowthPerWave: 3,
+      bossHpExponent: 1.42,
+      bossDamageExponent: 1.35,
     },
     skills: {
       artilleryStrike: {

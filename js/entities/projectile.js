@@ -8,6 +8,7 @@
       this.id = `proj-${projectileIdSeed++}`;
       this.fromType = options.fromType;
       this.fromId = options.fromId;
+      this.towerType = options.towerType || "";
       this.toType = options.toType;
       this.toId = options.toId;
       this.x = options.x;
@@ -25,10 +26,16 @@
       this.piercing = !!options.piercing;
       this.remainingPierce = options.remainingPierce || 0;
       this.sourceRole = options.sourceRole || "";
+      this.visualLevel = options.visualLevel || 1;
+      this.prevX = this.x;
+      this.prevY = this.y;
       this.createdAt = performance.now();
     }
 
     update(dt) {
+      this.prevX = this.x;
+      this.prevY = this.y;
+
       if (this.targetRef && this.targetRef.hp > 0) {
         this.targetX = this.targetRef.x;
         this.targetY = this.targetRef.y;

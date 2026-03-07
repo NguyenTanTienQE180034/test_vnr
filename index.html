@@ -15,7 +15,7 @@
         <div class="menu-actions">
           <button id="btn-play" class="btn btn-primary">Play</button>
           <button id="btn-guide" class="btn">Hướng dẫn</button>
-          <button id="btn-level-select" class="btn">Chọn màn</button>
+          <button id="btn-level-select" class="btn">Endless Mode</button>
           <button id="btn-quick" class="btn btn-glow">Bắt đầu nhanh</button>
         </div>
       </div>
@@ -29,7 +29,7 @@
           <li>Nhấn <strong>Nhận chi viện</strong> để trả lời quiz và lấy Supplies.</li>
           <li>Click vào trụ đã xây để nâng cấp, sửa chữa hoặc bán.</li>
           <li>Một số địch có thể bắn trả trụ/căn cứ theo ưu tiên công sự.</li>
-          <li>Qua đủ wave, hạ boss để thắng màn; căn cứ về 0 HP là thua.</li>
+          <li>Endless mode: mỗi wave kéo dài 30s và luôn có boss. Hạ boss để qua wave tiếp theo.</li>
         </ul>
         <button id="btn-close-guide" class="btn btn-primary">Đã hiểu</button>
       </div>
@@ -37,11 +37,9 @@
 
     <section id="level-screen" class="modal hidden">
       <div class="modal-card">
-        <h2>Chọn màn</h2>
+        <h2>Endless Mode</h2>
         <div class="level-grid">
-          <button class="btn level-btn" data-level="1">Màn 1</button>
-          <button class="btn level-btn" data-level="2">Màn 2</button>
-          <button class="btn level-btn" data-level="3">Màn 3</button>
+          <button class="btn level-btn" data-level="1">Bắt đầu Endless</button>
         </div>
         <button id="btn-close-level" class="btn">Đóng</button>
       </div>
@@ -49,11 +47,12 @@
 
     <section id="game-screen" class="screen hidden">
       <header class="topbar">
+        <button id="btn-tower-help" class="btn btn-help">?</button>
         <div class="stat"><span>HP Căn cứ</span><strong id="ui-base-hp">0/0</strong></div>
         <div class="stat"><span>Supplies</span><strong id="ui-supplies">0</strong></div>
         <div class="stat"><span>Command Points</span><strong id="ui-cp">0</strong></div>
-        <div class="stat"><span>Wave</span><strong id="ui-wave">0/10</strong></div>
-        <div class="stat"><span>Màn</span><strong id="ui-level">1</strong></div>
+        <div class="stat"><span>Wave</span><strong id="ui-wave">0</strong></div>
+        <div class="stat"><span>Mode</span><strong id="ui-level">ENDLESS</strong></div>
         <div class="stat"><span>Địch còn</span><strong id="ui-enemies-left">0</strong></div>
         <button id="btn-pause" class="btn btn-small">Pause</button>
       </header>
@@ -76,7 +75,7 @@
           </section>
 
           <section class="actions">
-            <button id="btn-start-wave" class="btn btn-glow">Gọi wave sớm (+thưởng)</button>
+            <button id="btn-start-wave" class="btn btn-glow">Bắt đầu wave ngay (+thưởng)</button>
             <button id="btn-quiz" class="btn btn-primary">Nhận chi viện</button>
             <div class="mini-text" id="ui-wave-state">Chuẩn bị wave...</div>
             <div class="mini-text" id="ui-quiz-cd">Quiz sẵn sàng</div>
@@ -89,6 +88,21 @@
               <button id="btn-upgrade-tower" class="btn btn-small">Nâng cấp</button>
               <button id="btn-repair-tower" class="btn btn-small">Sửa chữa</button>
               <button id="btn-sell-tower" class="btn btn-small btn-danger">Bán trụ</button>
+            </div>
+            <div class="tower-panel-actions">
+              <button id="btn-upgrade-dmg" class="btn btn-small">+DMG (CP)</button>
+              <button id="btn-upgrade-hp" class="btn btn-small">+HP (CP)</button>
+              <button id="btn-upgrade-spd" class="btn btn-small">+Tốc bắn (CP)</button>
+            </div>
+          </section>
+
+          <section id="base-panel" class="tower-panel">
+            <h3>Nâng cấp căn cứ</h3>
+            <div id="base-panel-body"></div>
+            <div class="tower-panel-actions">
+              <button id="btn-base-upgrade" class="btn btn-small">Nâng cấp căn cứ</button>
+              <button id="btn-base-hp-boost" class="btn btn-small">Tăng HP max (CP)</button>
+              <button id="btn-base-heal" class="btn btn-small">Hồi máu nhà (1/wave)</button>
             </div>
           </section>
         </aside>
@@ -110,10 +124,38 @@
         <h2 id="result-title">Kết quả</h2>
         <div id="result-stats"></div>
         <div class="menu-actions">
-          <button id="btn-next-level" class="btn btn-primary hidden">Qua màn tiếp</button>
+          <button id="btn-next-level" class="btn btn-primary hidden">Chơi tiếp</button>
           <button id="btn-restart" class="btn btn-glow">Chơi lại</button>
           <button id="btn-back-menu" class="btn">Về menu</button>
         </div>
+      </div>
+    </section>
+
+    <section id="tower-help-modal" class="modal hidden">
+      <div class="modal-card modal-card--wide">
+        <h2>Chi tiết các loại trụ</h2>
+        <div id="tower-help-content" class="tower-help-content"></div>
+        <button id="btn-close-tower-help" class="btn btn-primary">Đóng</button>
+      </div>
+    </section>
+
+    <section id="tower-upgrade-modal" class="modal hidden">
+      <div class="modal-card">
+        <h2 id="tower-upgrade-title">Nâng cấp trụ</h2>
+        <p id="tower-upgrade-desc" class="card-meta"></p>
+        <div class="menu-actions">
+          <button id="btn-confirm-tower-upgrade" class="btn btn-primary">Nâng cấp</button>
+          <button id="btn-cancel-tower-upgrade" class="btn">Huỷ</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="anti-cheat-overlay" class="anti-cheat-overlay hidden">
+      <div class="anti-cheat-card">
+        <h2>Developer Tools bị chặn</h2>
+        <p>Để tránh gian lận, game sẽ tạm dừng khi phát hiện DevTools/Inspect.</p>
+        <p>Hãy đóng DevTools rồi bấm đóng để quay lại game.</p>
+        <button id="btn-close-anti-cheat" class="btn btn-primary">Đóng popup</button>
       </div>
     </section>
   </div>
@@ -137,6 +179,7 @@
   <script src="js/systems/dragdrop-system.js"></script>
   <script src="js/systems/skill-system.js"></script>
   <script src="js/systems/audio-system.js"></script>
+  <script src="js/systems/anti-cheat-system.js"></script>
   <script src="js/systems/ui-system.js"></script>
   <script src="js/game.js"></script>
   <script src="js/main.js"></script>

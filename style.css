@@ -145,9 +145,23 @@ h1 {
 
 .topbar {
   display: grid;
-  grid-template-columns: repeat(7, minmax(0, 1fr)) auto;
+  grid-template-columns: repeat(6, minmax(0, 1fr)) auto;
   gap: 8px;
   margin-bottom: 10px;
+}
+
+.btn-help {
+  width: 44px;
+  height: 44px;
+  border-radius: 999px;
+  font-size: 1.2rem;
+  font-weight: 700;
+  padding: 0;
+  box-shadow: 0 0 16px rgba(95, 210, 255, 0.28);
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  z-index: 40;
 }
 
 .stat {
@@ -243,6 +257,24 @@ h1 {
   display: block;
 }
 
+.tower-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.tower-upgrade-quick {
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  padding: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1;
+  box-shadow: 0 0 10px rgba(124, 255, 158, 0.25);
+}
+
 .card-meta {
   font-size: 0.78rem;
   color: var(--muted);
@@ -271,6 +303,32 @@ h1 {
   margin-top: 10px;
 }
 
+.tower-help-content {
+  max-height: min(66vh, 620px);
+  overflow: auto;
+  border: 1px solid rgba(110, 170, 235, 0.26);
+  border-radius: 12px;
+  padding: 10px;
+  background: rgba(13, 26, 39, 0.7);
+}
+
+.help-card {
+  border: 1px solid rgba(122, 176, 244, 0.28);
+  border-radius: 10px;
+  padding: 10px;
+  margin-bottom: 8px;
+  background: rgba(24, 42, 62, 0.7);
+}
+
+.help-card:last-child {
+  margin-bottom: 0;
+}
+
+.help-meta {
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+
 .quiz-question {
   font-size: 1.1rem;
   line-height: 1.4;
@@ -297,6 +355,28 @@ h1 {
 
 .feedback-bad {
   color: var(--danger);
+}
+
+.anti-cheat-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(3, 8, 13, 0.94);
+  z-index: 200;
+  display: grid;
+  place-items: center;
+}
+
+.anti-cheat-card {
+  width: min(520px, 92vw);
+  border: 1px solid rgba(255, 126, 140, 0.5);
+  border-radius: 14px;
+  background: linear-gradient(180deg, rgba(54, 17, 26, 0.95), rgba(23, 8, 12, 0.95));
+  padding: 20px;
+  box-shadow: 0 0 28px rgba(255, 90, 114, 0.3);
+}
+
+#btn-close-anti-cheat {
+  margin-top: 8px;
 }
 
 @media (max-width: 1200px) {
