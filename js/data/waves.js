@@ -4,6 +4,17 @@
   const BASE_POOL = ["basicSoldier", "fastScout", "armoredInfantry", "sniperEnemy"];
   const MID_POOL = ["heavyGunner", "commander", "apcVehicle", "shieldBearer", "flameTrooper"];
   const LATE_POOL = ["tank", "rocketVehicle", "heavyGunner", "mortarTruck", "droneSwarm"];
+  const ELITE_POOL = [
+    "heavyGunner",
+    "commander",
+    "apcVehicle",
+    "shieldBearer",
+    "flameTrooper",
+    "tank",
+    "rocketVehicle",
+    "mortarTruck",
+    "droneSwarm",
+  ];
   const BOSS_POOL = ["supremeBoss", "ironBehemothBoss", "shadowPhantomBoss"];
 
   function pseudoRandom(seed) {
@@ -35,6 +46,12 @@
   function pickEnemyType(spawnPool, wave, spawnIndex) {
     const seed = wave * 191 + spawnIndex * 37;
     let picked = pickFromPool(spawnPool, seed);
+    const elitePool = spawnPool.filter((type) => ELITE_POOL.includes(type));
+    const eliteChance = Math.min(0.25 + (wave - 1) * 0.09, 0.92);
+
+    if (elitePool.length > 0 && pseudoRandom(seed + 911) < eliteChance) {
+      picked = pickFromPool(elitePool, seed + 97);
+    }
 
     if (wave >= 4 && spawnIndex % 7 === 0) {
       picked = "sniperEnemy";
@@ -45,7 +62,7 @@
     if (wave >= 8 && spawnIndex % 4 === 0) {
       picked = "apcVehicle";
     }
-    if (wave >= 11 && spawnIndex % 3 === 0) {
+    if (wave >= 10 && spawnIndex % 3 === 0) {
       picked = "tank";
     }
     if (wave >= 9 && spawnIndex % 6 === 0) {
@@ -53,6 +70,9 @@
     }
     if (wave >= 12 && spawnIndex % 5 === 0) {
       picked = "mortarTruck";
+    }
+    if (wave >= 12 && elitePool.length > 0 && spawnIndex % 2 === 0) {
+      picked = pickFromPool(elitePool, seed + 2041);
     }
 
     return picked;

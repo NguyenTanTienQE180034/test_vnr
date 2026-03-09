@@ -33,14 +33,14 @@
     state.prepTimer = config.wave.prepDuration;
     state.spawnTimer = 0;
     state.spawnedInWave = 0;
-    state.waveTimer = spec.durationSec;
+    state.waveTimer = 0;
     state.bossSpawnedInWave = false;
     state.bossKilledInWave = false;
     if (state.base) {
       state.base.healUsedThisWave = false;
     }
 
-    state.spawnQueue = new Array(spec.enemyCount).fill(0);
+    state.spawnQueue = [];
 
     return true;
   }
@@ -52,6 +52,7 @@
 
     state.wavePhase = "combat";
     state.spawnTimer = 0.06;
+    state.waveTimer = 0;
 
     state.bus.emit(config.eventNames.WAVE_START, {
       wave: state.wave,
@@ -91,25 +92,16 @@
       return;
     }
 
-    const elapsed = spec.durationSec - state.waveTimer;
-
-    state.waveTimer = Math.max(0, state.waveTimer - dt);
+    state.waveTimer += dt;
 
     state.spawnTimer -= dt;
-    while (state.spawnTimer <= 0 && state.waveTimer > 0) {
+    while (state.spawnTimer <= 0) {
       const type = spec.pickEnemyType(state.spawnedInWave);
       spawnEnemyByType(state, type);
-      if (state.spawnQueue.length > 0) {
-        state.spawnQueue.pop();
-      }
       state.spawnTimer += spec.spawnInterval;
     }
 
-    if (!state.bossSpawnedInWave && elapsed >= spec.bossSpawnAtSec) {
-      spawnEnemyByType(state, spec.bossType);
-    }
-
-    if (state.waveTimer <= 0 && !state.bossSpawnedInWave) {
+    if (!state.bossSpawnedInWave && state.waveTimer >= spec.bossSpawnAtSec) {
       spawnEnemyByType(state, spec.bossType);
     }
 
@@ -119,11 +111,8 @@
         state.bossKilledInWave = true;
         state.boss.activeId = null;
         state.boss.healthBarVisible = false;
+        resolveWaveCompleted(state);
       }
-    }
-
-    if (state.waveTimer <= 0 && state.bossKilledInWave) {
-      resolveWaveCompleted(state);
     }
   }
 

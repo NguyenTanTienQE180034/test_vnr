@@ -1908,6 +1908,7 @@
             this.answerButtons = [];
             this.currentType = null;
             this.pendingTowerType = null;
+            this.quizCooldownTicker = null;
         }
 
         create() {
@@ -2045,6 +2046,7 @@
         }
 
         hide() {
+            this.stopQuizCooldownTicker();
             this.currentType = null;
             this.pendingTowerType = null;
             this.overlay.setVisible(false);
@@ -2070,6 +2072,67 @@
                 btn.destroy();
             }
             this.answerButtons = [];
+        }
+
+        stopQuizCooldownTicker() {
+            if (!this.quizCooldownTicker) {
+                return;
+            }
+            this.quizCooldownTicker.remove(false);
+            this.quizCooldownTicker = null;
+        }
+
+        updateWrongAnswerFeedback(explanation) {
+            const remain = Math.max(0, App.state.quizCooldown || 0);
+            const baseText =
+                `Đáp án sai: Không nhận được tiếp tế. ` +
+                `Trả lời lại sau: ${remain.toFixed(1)}s.`;
+            this.feedback.setColor("#ff8e95");
+            this.feedback.setText(
+                explanation ? `${baseText}\n${explanation}` : baseText,
+            );
+        }
+
+        beginWrongAnswerCooldown(explanation) {
+            this.stopQuizCooldownTicker();
+            const tick = () => {
+                if (this.currentType !== "quiz" || !App.modalState.active) {
+                    this.stopQuizCooldownTicker();
+                    return;
+                }
+
+                this.updateWrongAnswerFeedback(explanation);
+
+                if ((App.state.quizCooldown || 0) > 0.01) {
+                    return;
+                }
+
+                this.stopQuizCooldownTicker();
+                const next = App.quizSystem.openQuiz(App.state);
+                if (!next.ok) {
+                    if (next.reason === "cooldown") {
+                        this.feedback.setColor("#ff8e95");
+                        this.feedback.setText(
+                            `Quiz cooldown ${Math.ceil(next.cooldown || 0)}s.`,
+                        );
+                    } else {
+                        this.feedback.setColor("#9fb7d3");
+                        this.feedback.setText(
+                            "No more question. You can close quiz.",
+                        );
+                    }
+                    return;
+                }
+
+                this.renderQuizQuestion(next, "");
+            };
+
+            tick();
+            this.quizCooldownTicker = this.time.addEvent({
+                delay: 100,
+                loop: true,
+                callback: tick,
+            });
         }
 
         measureWrappedHeight(text, width, fontSize) {
@@ -2138,6 +2201,7 @@
         }
 
         renderQuizQuestion(payload, carryFeedback) {
+            this.stopQuizCooldownTicker();
             this.clearAnswerButtons();
             const left = VIEW.width / 2 - 330;
             const questionTop = VIEW.height / 2 - 166;
@@ -2211,6 +2275,7 @@
         }
 
         openQuiz() {
+            this.stopQuizCooldownTicker();
             const opened = App.quizSystem.openQuiz(App.state);
             if (!opened.ok) {
                 if (opened.reason === "cooldown") {
@@ -2248,6 +2313,7 @@
         }
 
         answerQuiz(index) {
+            this.stopQuizCooldownTicker();
             const result = App.quizSystem.answerQuiz(App.state, index);
             if (!result.ok) {
                 return;
@@ -2257,9 +2323,7 @@
             }
             if (result.correct) {
                 this.feedback.setColor("#7cff9e");
-                this.feedback.setText(
-                    `Correct! +${result.reward} Supplies, +${result.cpGain} CP`,
-                );
+                this.feedback.setText(`Correct! +${result.reward} Supplies`);
                 this.time.delayedCall(420, () => {
                     if (this.currentType !== "quiz" || !App.modalState.active) {
                         return;
@@ -2281,7 +2345,7 @@
                     }
                     this.renderQuizQuestion(
                         next,
-                        `Correct! +${result.reward} Supplies, +${result.cpGain} CP`,
+                        `Correct! +${result.reward} Supplies `,
                     );
                 });
             } else {
@@ -2289,6 +2353,7 @@
                 this.feedback.setText(
                     `Đáp án sai: Không nhận được tiếp tế. Được trả lời lại sau: ${App.config.quiz.wrongCooldown}s.\n${result.explanation}`,
                 );
+                this.beginWrongAnswerCooldown(result.explanation || "");
                 this.btnClose.setLabel("Close");
                 this.btnClose.setEnabled(true);
                 this.btnClose.setVisible(true);
@@ -2312,7 +2377,7 @@
             this.show("result");
             this.title.setText(result.title);
             this.body.setText(
-                `${result.reason}\n\nHighest wave: ${result.wave}\nPlay time: ${result.playTime}\nCorrect answers: ${result.correctAnswers} | Wrong: ${result.wrongAnswers}\nTowers built: ${result.towersBuilt}\nEnemies killed: ${result.enemiesKilled}\nWaves cleared: ${result.wavesCleared}`,
+                `${result.reason}\n\nWave cao nhất : ${result.wave}\nPlay time: ${result.playTime}\nSố câu trả lời đúng: ${result.correctAnswers} | Số câu trả lời sai: ${result.wrongAnswers}\nSố trụ đã xây: ${result.towersBuilt}\nĐã tiêu diệt được: ${result.enemiesKilled} kẻ địch\nWaves đã qua: ${result.wavesCleared}`,
             );
             this.feedback.setText("");
             this.btnRestart.setVisible(true);

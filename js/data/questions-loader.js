@@ -53,7 +53,7 @@
       question,
       answers,
       correctIndex,
-      explanation: typeof item.explanation === "string" ? item.explanation : "Nguon: questions.json",
+      explanation: typeof item.explanation === "string" ? item.explanation.trim() : "",
     };
   }
 
