@@ -26,7 +26,10 @@
   }
 
   function randomQuestionIndex(state) {
-    const total = App.questionsData.length;
+    const total = Array.isArray(App.questionsData) ? App.questionsData.length : 0;
+    if (total === 0) {
+      return null;
+    }
 
     if (state.quizUsedIndexes.length >= total) {
       state.quizUsedIndexes = [];
@@ -52,7 +55,14 @@
       return false;
     }
 
+    if (!Array.isArray(App.questionsData) || App.questionsData.length === 0) {
+      return false;
+    }
+
     runtime.activeQuestionIndex = randomQuestionIndex(state);
+    if (runtime.activeQuestionIndex === null) {
+      return false;
+    }
     runtime.answered = false;
 
     const q = App.questionsData[runtime.activeQuestionIndex];

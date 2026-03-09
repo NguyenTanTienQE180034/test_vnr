@@ -249,11 +249,9 @@
       if (!tower) {
         return;
       }
-      const refund = tower.getSellValue();
-      state.supplies += refund;
       state.towers = state.towers.filter((t) => t.id !== tower.id);
       state.selectedTowerId = null;
-      App.Effects.addFloatingText(state, tower.x - 14, tower.y - 24, `+${refund}`, "#85f5ac");
+      App.Effects.addFloatingText(state, tower.x - 14, tower.y - 24, "Đã bán", "#85f5ac");
       renderTowerPanel(state);
     });
 

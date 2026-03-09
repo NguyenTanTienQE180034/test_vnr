@@ -64,8 +64,6 @@
       return false;
     }
 
-    state.supplies += state.currentWaveSpec.earlyReward;
-    App.Effects.addFloatingText(state, 20, 40, `+${state.currentWaveSpec.earlyReward} early bonus`, "#8cffb8");
     startWaveNow(state);
     return true;
   }
@@ -77,7 +75,6 @@
 
   function resolveWaveCompleted(state) {
     state.stats.wavesCleared += 1;
-    state.supplies += 40 + state.wave * 10;
     state.commandPoints += 1;
 
     state.bus.emit(config.eventNames.WAVE_CLEARED, {

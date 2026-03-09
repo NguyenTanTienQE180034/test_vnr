@@ -40,7 +40,6 @@
     App.Effects.addFloatingText(state, enemy.x + 8, enemy.y - 6, `-${Math.floor(dealt)}`, "#ffe2a9");
 
     if (enemy.hp <= 0) {
-      state.supplies += enemy.reward;
       state.stats.enemiesKilled += 1;
       App.Effects.addExplosion(state, enemy.x, enemy.y, enemy.isBoss ? 34 : 20, "rgba(255,140,120,0.65)");
     }

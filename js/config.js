@@ -39,13 +39,9 @@
       collisionRadius: 16,
     },
     scaling: {
-      hpExponent: 1.52,
-      damageExponent: 1.38,
-      speedStep: 0.035,
-      armorStepWave: 3,
+      enemyWaveMultiplier: 3,
+      bossWaveMultiplier: 5,
       spawnGrowthPerWave: 3,
-      bossHpExponent: 1.42,
-      bossDamageExponent: 1.35,
     },
     skills: {
       artilleryStrike: {

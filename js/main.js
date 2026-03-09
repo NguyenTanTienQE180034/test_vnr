@@ -88,12 +88,21 @@
     });
   }
 
-  function boot() {
+  async function boot() {
     cacheDom();
     bindMenuActions();
+
+    if (typeof App.loadQuestionsData === "function") {
+      await App.loadQuestionsData();
+    }
+
     App.game.init();
     showMainMenu();
   }
 
-  document.addEventListener("DOMContentLoaded", boot);
+  document.addEventListener("DOMContentLoaded", () => {
+    boot().catch((error) => {
+      console.error("Boot failed:", error);
+    });
+  });
 })();

@@ -61,8 +61,14 @@
 
     document.getElementById("btn-quiz").addEventListener("click", () => {
       const opened = App.quizSystem.openQuiz(App.state);
-      if (!opened && App.state.quizCooldown > 0) {
-        App.Effects.addFloatingText(App.state, 24, 84, "Quiz đang cooldown", "#ff9fb6");
+      if (!opened) {
+        if (App.state.quizCooldown > 0) {
+          App.Effects.addFloatingText(App.state, 24, 84, "Quiz đang cooldown", "#ff9fb6");
+          return;
+        }
+        if (!Array.isArray(App.questionsData) || App.questionsData.length === 0) {
+          App.Effects.addFloatingText(App.state, 24, 84, "Chua tai du lieu cau hoi", "#ff9fb6");
+        }
       }
     });
 

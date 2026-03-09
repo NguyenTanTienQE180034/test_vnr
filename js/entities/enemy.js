@@ -9,7 +9,7 @@
       const config = App.config;
       const safeWave = waveSpec || { wave: 1, globalWave: 1 };
       const globalWave = safeWave.globalWave || safeWave.wave || 1;
-      const bossLevel = Math.max(1, safeWave.wave || globalWave);
+      const waveIndex = Math.max(0, globalWave - 1);
 
       this.id = `enemy-${enemyIdSeed++}`;
       this.type = type;
@@ -36,23 +36,14 @@
                 ? 14
                 : 13;
 
-      const hpScale = Math.pow(config.scaling.hpExponent, globalWave);
-      const damageScale = Math.pow(config.scaling.damageExponent, globalWave);
-      const armorScaleAdd = Math.floor(globalWave / config.scaling.armorStepWave);
-      const speedScale = 1 + globalWave * config.scaling.speedStep;
+      const waveMultiplier = this.isBoss ? config.scaling.bossWaveMultiplier : config.scaling.enemyWaveMultiplier;
+      const statScale = Math.pow(waveMultiplier, waveIndex);
+      const safeScale = Number.isFinite(statScale) ? statScale : Number.MAX_SAFE_INTEGER;
 
-      let hp = def.hp * hpScale;
-      let damage = def.damage * damageScale;
-      let armor = def.armor + armorScaleAdd;
-      let speed = def.speed * speedScale;
-
-      if (this.isBoss) {
-        const bossHp = def.hp * Math.pow(config.scaling.bossHpExponent, bossLevel);
-        const bossDmg = def.damage * Math.pow(config.scaling.bossDamageExponent, bossLevel);
-        hp = Math.max(hp, bossHp);
-        damage = Math.max(damage, bossDmg);
-        armor += Math.floor(bossLevel / 2) * 6;
-      }
+      let hp = def.hp * safeScale;
+      let damage = def.damage * safeScale;
+      let armor = def.armor * safeScale;
+      let speed = def.speed * safeScale;
 
       this.maxHp = Math.floor(hp);
       this.hp = Math.floor(hp);
@@ -68,7 +59,7 @@
       this.projectileType = def.projectileType;
       this.splashRadius = def.splashRadius || 0;
 
-      this.reward = Math.floor(def.reward * (1 + globalWave * 0.06));
+      this.reward = 0;
 
       this.buffs = {
         speedMult: 1,
