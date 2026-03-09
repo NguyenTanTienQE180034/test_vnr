@@ -75,6 +75,7 @@
         timer: 0,
         duration: 0.12,
       };
+      this.extraLaserBeams = [];
 
       this.isSupport = type === "command";
       this.isBarricade = type === "barricade";
@@ -287,12 +288,25 @@
         return;
       }
       const data = beamData && typeof beamData === "object" ? beamData : null;
+      const beams = Array.isArray(data?.beams) ? data.beams : data ? [data] : [];
+      const list = beams.filter((beam) => beam && typeof beam === "object");
+      if (!list.length) {
+        this.clearLaserBeam();
+        return;
+      }
+
+      const primary = list[0];
       this.laserBeam.active = true;
-      this.laserBeam.targetId = data?.targetId || "";
-      this.laserBeam.endX = typeof data?.endX === "number" ? data.endX : this.x;
-      this.laserBeam.endY = typeof data?.endY === "number" ? data.endY : this.y;
+      this.laserBeam.targetId = primary.targetId || "";
+      this.laserBeam.endX = typeof primary.endX === "number" ? primary.endX : this.x;
+      this.laserBeam.endY = typeof primary.endY === "number" ? primary.endY : this.y;
       this.laserBeam.duration = Math.min(0.75, Math.max(0.14, this.cooldown * 0.92 || 0.2));
       this.laserBeam.timer = this.laserBeam.duration;
+      this.extraLaserBeams = list.slice(1).map((beam) => ({
+        targetId: beam.targetId || "",
+        endX: typeof beam.endX === "number" ? beam.endX : this.x,
+        endY: typeof beam.endY === "number" ? beam.endY : this.y,
+      }));
     }
 
     clearLaserBeam() {
@@ -301,6 +315,7 @@
       this.laserBeam.endX = this.x;
       this.laserBeam.endY = this.y;
       this.laserBeam.timer = 0;
+      this.extraLaserBeams = [];
     }
   }
 

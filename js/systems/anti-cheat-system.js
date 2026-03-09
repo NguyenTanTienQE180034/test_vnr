@@ -1,13 +1,24 @@
-﻿(function () {
+(function () {
   const App = (window.App = window.App || {});
 
   const state = {
     locked: false,
+    initialized: false,
     detectInterval: null,
     debugInterval: null,
-    overlayEl: null,
-    closeBtn: null,
   };
+
+  function emitLockState(reason) {
+    const names = App.uiEventNames || {};
+    if (!App.state || !App.state.bus || !names.ANTI_CHEAT_LOCK || !names.ANTI_CHEAT_UNLOCK) {
+      return;
+    }
+    if (state.locked) {
+      App.state.bus.emit(names.ANTI_CHEAT_LOCK, { reason });
+    } else {
+      App.state.bus.emit(names.ANTI_CHEAT_UNLOCK, { reason });
+    }
+  }
 
   function blockHotkeys(event) {
     const key = String(event.key || "").toUpperCase();
@@ -41,21 +52,15 @@
     if (App.state) {
       App.state.paused = true;
     }
-
-    if (state.overlayEl) {
-      state.overlayEl.classList.remove("hidden");
-      state.overlayEl.dataset.reason = reason;
-    }
+    emitLockState(reason || "unknown");
   }
 
-  function dismissOverlay() {
-    if (state.overlayEl) {
-      state.overlayEl.classList.add("hidden");
-    }
+  function dismiss() {
     state.locked = false;
     if (App.state && App.state.mode === "playing") {
       App.state.paused = false;
     }
+    emitLockState("dismiss");
   }
 
   function attachDetectors() {
@@ -78,7 +83,6 @@
 
     state.debugInterval = window.setInterval(() => {
       const start = performance.now();
-      // Intentional debugger trap to detect opened devtools.
       // eslint-disable-next-line no-debugger
       debugger;
       const spent = performance.now() - start;
@@ -89,21 +93,17 @@
   }
 
   function init() {
-    state.overlayEl = document.getElementById("anti-cheat-overlay");
-    state.closeBtn = document.getElementById("btn-close-anti-cheat");
-
-    if (state.closeBtn) {
-      state.closeBtn.addEventListener("click", () => {
-        dismissOverlay();
-      });
+    if (state.initialized) {
+      return;
     }
-
+    state.initialized = true;
     attachDetectors();
   }
 
-  document.addEventListener("DOMContentLoaded", init);
-
   App.antiCheatSystem = {
+    init,
+    dismiss,
+    lockGame,
     isLocked() {
       return state.locked;
     },

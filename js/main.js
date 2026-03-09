@@ -1,108 +1,26 @@
-﻿(function () {
+(function () {
   const App = (window.App = window.App || {});
 
-  const dom = {};
-
-  function cacheDom() {
-    dom.mainMenu = document.getElementById("main-menu");
-    dom.gameScreen = document.getElementById("game-screen");
-    dom.guideScreen = document.getElementById("guide-screen");
-    dom.levelScreen = document.getElementById("level-screen");
-    dom.resultModal = document.getElementById("result-modal");
-
-    dom.btnPlay = document.getElementById("btn-play");
-    dom.btnQuick = document.getElementById("btn-quick");
-    dom.btnGuide = document.getElementById("btn-guide");
-    dom.btnCloseGuide = document.getElementById("btn-close-guide");
-    dom.btnLevelSelect = document.getElementById("btn-level-select");
-    dom.btnCloseLevel = document.getElementById("btn-close-level");
-
-    dom.levelButtons = [...document.querySelectorAll(".level-btn")];
-
-    dom.btnRestart = document.getElementById("btn-restart");
-    dom.btnBackMenu = document.getElementById("btn-back-menu");
-    dom.btnNextLevel = document.getElementById("btn-next-level");
-  }
-
-  function showMainMenu() {
-    dom.mainMenu.classList.add("screen--active");
-    dom.mainMenu.classList.remove("hidden");
-    dom.gameScreen.classList.add("hidden");
-    dom.levelScreen.classList.add("hidden");
-    dom.guideScreen.classList.add("hidden");
-    dom.resultModal.classList.add("hidden");
-
-    App.quizSystem.closeQuiz();
-    App.state.mode = "menu";
-  }
-
-  function showGameScreen() {
-    dom.mainMenu.classList.remove("screen--active");
-    dom.mainMenu.classList.add("hidden");
-    dom.gameScreen.classList.remove("hidden");
-    dom.levelScreen.classList.add("hidden");
-    dom.guideScreen.classList.add("hidden");
-  }
-
-  function startEndless() {
-    showGameScreen();
-    App.game.startEndless();
-  }
-
-  function bindMenuActions() {
-    dom.btnPlay.addEventListener("click", () => startEndless());
-    dom.btnQuick.addEventListener("click", () => startEndless());
-
-    dom.btnGuide.addEventListener("click", () => {
-      dom.guideScreen.classList.remove("hidden");
+  function boot() {
+    const game = new Phaser.Game({
+      type: Phaser.AUTO,
+      parent: "game-root",
+      width: App.view?.width || 1320,
+      height: App.view?.height || 760,
+      backgroundColor: "#081019",
+      scene: [App.BootScene, App.MenuScene, App.BattleScene, App.UIScene, App.ModalScene],
+      scale: {
+        mode: Phaser.Scale.FIT,
+        autoCenter: Phaser.Scale.CENTER_BOTH,
+      },
     });
 
-    dom.btnCloseGuide.addEventListener("click", () => {
-      dom.guideScreen.classList.add("hidden");
-    });
+    App.phaserGame = game;
 
-    dom.btnLevelSelect.addEventListener("click", () => {
-      dom.levelScreen.classList.remove("hidden");
-    });
-
-    dom.btnCloseLevel.addEventListener("click", () => {
-      dom.levelScreen.classList.add("hidden");
-    });
-
-    dom.levelButtons.forEach((btn) => {
-      btn.addEventListener("click", () => {
-        startEndless();
-      });
-    });
-
-    dom.btnRestart.addEventListener("click", () => {
-      startEndless();
-    });
-
-    dom.btnBackMenu.addEventListener("click", () => {
-      showMainMenu();
-    });
-
-    dom.btnNextLevel.addEventListener("click", () => {
-      startEndless();
-    });
-  }
-
-  async function boot() {
-    cacheDom();
-    bindMenuActions();
-
-    if (typeof App.loadQuestionsData === "function") {
-      await App.loadQuestionsData();
+    if (App.antiCheatSystem && typeof App.antiCheatSystem.init === "function") {
+      App.antiCheatSystem.init();
     }
-
-    App.game.init();
-    showMainMenu();
   }
 
-  document.addEventListener("DOMContentLoaded", () => {
-    boot().catch((error) => {
-      console.error("Boot failed:", error);
-    });
-  });
+  window.addEventListener("load", boot);
 })();

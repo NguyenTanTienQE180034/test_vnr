@@ -88,6 +88,86 @@
     return candidate;
   }
 
+  function normalizeAngle(angle) {
+    let a = angle;
+    while (a <= -Math.PI) {
+      a += Math.PI * 2;
+    }
+    while (a > Math.PI) {
+      a -= Math.PI * 2;
+    }
+    return a;
+  }
+
+  function angleDiff(a, b) {
+    const d = Math.abs(normalizeAngle(a - b));
+    return d > Math.PI ? Math.PI * 2 - d : d;
+  }
+
+  function pickNearestEnemiesForTower(tower, enemies, count) {
+    const range = tower.getEffectiveRange();
+    return enemies
+      .filter((enemy) => enemy.isAlive())
+      .map((enemy) => ({
+        enemy,
+        dist: App.map.distance(tower, enemy),
+      }))
+      .filter((entry) => entry.dist <= range)
+      .sort((a, b) => a.dist - b.dist)
+      .slice(0, Math.max(1, count || 1))
+      .map((entry) => entry.enemy);
+  }
+
+  function pickLaserTargetsForTower(tower, enemies, count) {
+    const range = tower.getEffectiveRange();
+    const maxCount = Math.max(1, count || 1);
+    const candidates = enemies
+      .filter((enemy) => enemy.isAlive())
+      .map((enemy) => {
+        const dx = enemy.x - tower.x;
+        const dy = enemy.y - tower.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist > range) {
+          return null;
+        }
+        return {
+          enemy,
+          dist,
+          angle: Math.atan2(dy, dx),
+        };
+      })
+      .filter((entry) => !!entry)
+      .sort((a, b) => a.dist - b.dist);
+
+    if (!candidates.length) {
+      return [];
+    }
+    if (candidates.length <= maxCount) {
+      return candidates.map((entry) => entry.enemy);
+    }
+
+    const selected = [candidates.shift()];
+    while (selected.length < maxCount && candidates.length > 0) {
+      let bestIndex = 0;
+      let bestScore = Number.NEGATIVE_INFINITY;
+      for (let i = 0; i < candidates.length; i += 1) {
+        const candidate = candidates[i];
+        let minSep = Number.POSITIVE_INFINITY;
+        for (const picked of selected) {
+          minSep = Math.min(minSep, angleDiff(candidate.angle, picked.angle));
+        }
+        const score = minSep * 1000 - candidate.dist;
+        if (score > bestScore) {
+          bestScore = score;
+          bestIndex = i;
+        }
+      }
+      selected.push(candidates.splice(bestIndex, 1)[0]);
+    }
+
+    return selected.map((entry) => entry.enemy);
+  }
+
   function pointToSegmentDistance(px, py, x1, y1, x2, y2) {
     const vx = x2 - x1;
     const vy = y2 - y1;
@@ -108,43 +188,74 @@
     return Math.sqrt(dx * dx + dy * dy);
   }
 
-  function laserHitscan(state, tower, primaryTarget, damage) {
+  function laserHitscan(state, tower, primaryTarget, damage, options) {
     const range = tower.getEffectiveRange();
     const corridorWidth = tower.level >= 3 ? 30 : tower.level === 2 ? 24 : 18;
+    const pierceCount = tower.special.piercingShots ? Math.max(1, tower.special.pierceCount || 1) : 0;
+    const maxHits = 1 + pierceCount;
 
     const vx = primaryTarget.x - tower.x;
     const vy = primaryTarget.y - tower.y;
     const len = Math.sqrt(vx * vx + vy * vy) || 0.0001;
     const dirX = vx / len;
     const dirY = vy / len;
-    const endX = tower.x + dirX * range;
-    const endY = tower.y + dirY * range;
+    const lineEndX = tower.x + dirX * range;
+    const lineEndY = tower.y + dirY * range;
 
-    const targets = state.enemies
+    const candidates = state.enemies
       .filter((enemy) => enemy.isAlive())
-      .filter((enemy) => {
+      .map((enemy) => {
         const proj = (enemy.x - tower.x) * dirX + (enemy.y - tower.y) * dirY;
         if (proj < -6 || proj > range + enemy.radius) {
-          return false;
+          return null;
         }
-        const d = pointToSegmentDistance(enemy.x, enemy.y, tower.x, tower.y, endX, endY);
-        return d <= corridorWidth + enemy.radius * 0.35;
+        const d = pointToSegmentDistance(enemy.x, enemy.y, tower.x, tower.y, lineEndX, lineEndY);
+        if (d > corridorWidth + enemy.radius * 0.35) {
+          return null;
+        }
+        return {
+          enemy,
+          proj,
+        };
       })
-      .sort((a, b) => getEnemyProgress(b) - getEnemyProgress(a));
+      .filter((item) => !!item)
+      .sort((a, b) => a.proj - b.proj);
 
-    if (!targets.length) {
-      App.collisionSystem.applyDamageToEnemy(state, primaryTarget, damage, tower.damageType, tower.role);
-    } else {
-      for (const enemy of targets) {
-        App.collisionSystem.applyDamageToEnemy(state, enemy, damage, tower.damageType, tower.role);
+    const selected = [];
+    for (const item of candidates) {
+      selected.push(item);
+      if (selected.length >= maxHits) {
+        break;
       }
     }
 
-    tower.lockLaserBeam({
-      targetId: primaryTarget.id,
-      endX,
-      endY,
-    });
+    if (!selected.some((item) => item.enemy.id === primaryTarget.id)) {
+      selected.unshift({ enemy: primaryTarget, proj: len });
+      if (selected.length > maxHits) {
+        selected.length = maxHits;
+      }
+    }
+
+    for (const item of selected) {
+      App.collisionSystem.applyDamageToEnemy(state, item.enemy, damage, tower.damageType, tower.role);
+    }
+
+    let farthestProj = len;
+    for (const item of selected) {
+      farthestProj = Math.max(farthestProj, item.proj);
+    }
+
+    const beamReach = Math.min(range, Math.max(len, farthestProj + 28));
+    const endX = tower.x + dirX * beamReach;
+    const endY = tower.y + dirY * beamReach;
+
+    if (!options || !options.skipBeamLock) {
+      tower.lockLaserBeam({
+        targetId: primaryTarget.id,
+        endX,
+        endY,
+      });
+    }
 
   }
 
@@ -366,6 +477,47 @@
     for (const tower of state.towers) {
       tower.tick(dt);
       if (tower.hp <= 0 || tower.attackSpeed <= 0) {
+        continue;
+      }
+      if (tower.type === "laser") {
+        const beamCount = tower.level >= 3 ? 3 : tower.level === 2 ? 2 : 1;
+        const targets = pickLaserTargetsForTower(tower, state.enemies, beamCount);
+        if (!targets.length || tower.stunnedTimer > 0) {
+          tower.clearLaserBeam();
+          continue;
+        }
+
+        const range = tower.getEffectiveRange();
+        const beams = targets.map((target) => {
+          const vx = target.x - tower.x;
+          const vy = target.y - tower.y;
+          const len = Math.sqrt(vx * vx + vy * vy) || 0.0001;
+          const dirX = vx / len;
+          const dirY = vy / len;
+          return {
+            targetId: target.id,
+            endX: tower.x + dirX * range,
+            endY: tower.y + dirY * range,
+          };
+        });
+        tower.lockLaserBeam({
+          beams,
+        });
+
+        if (tower.isReadyToFire()) {
+          const isCrit = Math.random() < config.combat.critChance;
+          let damage = tower.getEffectiveDamage();
+          if (isCrit) {
+            damage *= config.combat.critMultiplier;
+            App.Effects.addFloatingText(state, targets[0].x, targets[0].y - 18, "CRIT", "#ffd966");
+          }
+
+          App.Effects.addMuzzle(state, tower.x, tower.y, tower.color);
+          for (const target of targets) {
+            laserHitscan(state, tower, target, damage, { skipBeamLock: true });
+          }
+          tower.markFired();
+        }
         continue;
       }
       if (!tower.isReadyToFire()) {

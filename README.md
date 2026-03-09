@@ -1,10 +1,11 @@
 ﻿# Chiến Tuyến 1954-1965
 
-Prototype tower defense chạy trực tiếp trên trình duyệt bằng HTML/CSS/JavaScript + Canvas.
+Prototype tower defense chạy trực tiếp trên trình duyệt bằng HTML/CSS/JavaScript + Phaser 3.
 
 ## Cách chạy
 1. Mở file `index.html` bằng trình duyệt.
 2. Ở menu chính chọn `Play` hoặc `Bắt đầu nhanh` để vào Endless mode.
+3. Phaser runtime được nhúng local qua file `phaser.min.js` trong repo.
 
 ## Điều khiển nhanh
 - Kéo thả trụ từ panel phải vào các ô tròn trên map.

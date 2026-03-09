@@ -75,7 +75,7 @@
 
   function resolveWaveCompleted(state) {
     state.stats.wavesCleared += 1;
-    state.commandPoints += 1;
+    state.commandPoints += state.wave;
 
     state.bus.emit(config.eventNames.WAVE_CLEARED, {
       wave: state.wave,

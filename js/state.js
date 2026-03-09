@@ -58,6 +58,8 @@
       hoverX: 0,
       hoverY: 0,
       canPlace: false,
+      hoverValid: false,
+      previewCard: null,
     },
 
     skills: {
@@ -130,6 +132,10 @@
 
     s.drag.activeTowerType = null;
     s.drag.canPlace = false;
+    s.drag.hoverX = 0;
+    s.drag.hoverY = 0;
+    s.drag.hoverValid = false;
+    s.drag.previewCard = null;
 
     s.skills.activeTargetSkill = null;
     s.skills.cooldowns.artilleryStrike = 0;
