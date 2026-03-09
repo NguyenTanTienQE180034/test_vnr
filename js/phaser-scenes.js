@@ -14,6 +14,22 @@
         panelHeight: 620,
     };
 
+    const UI_THEME = {
+        fontFamily: "Consolas",
+        textPrimary: "#e8e2cc",
+        textMuted: "#b8ac8d",
+        buttonBg: 0x33452a,
+        buttonBorder: 0xa3bb7f,
+        buttonText: "#e9f2d8",
+        buttonHover: 0x3f5633,
+        panelBg: 0x17070b,
+        panelBorder: 0x815448,
+        cardBg: 0x271218,
+        cardBorder: 0xae7d68,
+        topbarBg: 0x1a070d,
+        topbarBorder: 0x7c4d42,
+    };
+
     App.view = VIEW;
     App.modalState = App.modalState || { active: false, type: null };
 
@@ -63,23 +79,26 @@
     }
 
     function makeButton(scene, options) {
+        const baseColor = options.baseColor || UI_THEME.buttonBg;
+        const hoverColor = options.hoverColor || UI_THEME.buttonHover;
+        const lineColor = options.lineColor || UI_THEME.buttonBorder;
         const bg = scene.add.rectangle(
             options.x,
             options.y,
             options.width,
             options.height,
-            options.baseColor || 0x243f5d,
+            baseColor,
             1,
         );
-        bg.setStrokeStyle(1, options.lineColor || 0x7ab0f4, 0.45);
+        bg.setStrokeStyle(1, lineColor, 0.55);
         bg.setInteractive({ useHandCursor: true });
         const baseFontSize =
             Number.parseInt(String(options.fontSize || "14px"), 10) || 14;
         const text = scene.add
             .text(options.x, options.y, "", {
-                fontFamily: "Trebuchet MS",
+                fontFamily: options.fontFamily || UI_THEME.fontFamily,
                 fontSize: `${baseFontSize}px`,
-                color: "#dce8f7",
+                color: options.textColor || UI_THEME.buttonText,
             })
             .setOrigin(0.5);
 
@@ -131,6 +150,15 @@
             if (typeof options.onClick === "function") {
                 options.onClick();
             }
+        });
+        bg.on("pointerover", () => {
+            if (!ref.enabled) {
+                return;
+            }
+            bg.setFillStyle(hoverColor, 1);
+        });
+        bg.on("pointerout", () => {
+            bg.setFillStyle(baseColor, 1);
         });
 
         fitLabel(options.label || "");
@@ -212,8 +240,8 @@
                 width: 230,
                 height: 42,
                 label: "Bắt đầu nhanh",
-                baseColor: 0x2d8b5d,
-                lineColor: 0x7cff9e,
+                baseColor: 0x415b33,
+                lineColor: 0xb8d59b,
                 onClick: () => this.startGame(),
             });
             makeButton(this, {
@@ -385,128 +413,97 @@
             g.clear();
             const mapDef = App.map.getMap(state.level);
 
-            g.fillStyle(0x112033, 1);
+            g.fillStyle(0x2a0b10, 1);
             g.fillRect(
                 VIEW.worldX,
                 VIEW.worldY,
                 VIEW.worldWidth,
                 VIEW.worldHeight,
             );
-            g.fillStyle(0x1d3550, 0.4);
-            g.fillRect(VIEW.worldX, VIEW.worldY + 40, VIEW.worldWidth, 120);
-            g.fillStyle(0x0c1726, 0.45);
+            g.fillStyle(0x3b1119, 0.55);
+            g.fillRect(VIEW.worldX, VIEW.worldY + 24, VIEW.worldWidth, 120);
+            g.fillStyle(0x1a060a, 0.45);
             g.fillRect(
                 VIEW.worldX,
-                VIEW.worldY + VIEW.worldHeight - 180,
+                VIEW.worldY + VIEW.worldHeight - 170,
                 VIEW.worldWidth,
-                160,
+                146,
             );
 
-            g.lineStyle(1, 0x7da0c6, 0.08);
-            for (
-                let gx = VIEW.worldX;
-                gx <= VIEW.worldX + VIEW.worldWidth;
-                gx += 40
-            ) {
+            for (let gy = VIEW.worldY; gy < VIEW.worldY + VIEW.worldHeight; gy += 56) {
+                for (let gx = VIEW.worldX; gx < VIEW.worldX + VIEW.worldWidth; gx += 56) {
+                    const checker = ((gx + gy) / 56) % 2 === 0;
+                    g.fillStyle(checker ? 0x2f0d13 : 0x24090f, 0.32);
+                    g.fillRect(gx + 2, gy + 2, 52, 52);
+                }
+            }
+
+            const drawPathLayer = (width, color, alpha) => {
+                g.lineStyle(width, color, alpha);
                 g.beginPath();
-                g.moveTo(gx, VIEW.worldY);
-                g.lineTo(gx, VIEW.worldY + VIEW.worldHeight);
+                for (let i = 0; i < mapDef.path.length; i += 1) {
+                    const p = worldToScreen(mapDef.path[i].x, mapDef.path[i].y);
+                    if (i === 0) {
+                        g.moveTo(p.x, p.y);
+                    } else {
+                        g.lineTo(p.x, p.y);
+                    }
+                }
                 g.strokePath();
-            }
-            for (
-                let gy = VIEW.worldY;
-                gy <= VIEW.worldY + VIEW.worldHeight;
-                gy += 40
-            ) {
-                g.beginPath();
-                g.moveTo(VIEW.worldX, gy);
-                g.lineTo(VIEW.worldX + VIEW.worldWidth, gy);
-                g.strokePath();
-            }
+            };
 
-            g.lineStyle(40, 0x495c72, 1);
-            g.beginPath();
-            for (let i = 0; i < mapDef.path.length; i += 1) {
-                const p = worldToScreen(mapDef.path[i].x, mapDef.path[i].y);
-                if (i === 0) {
-                    g.moveTo(p.x, p.y);
-                } else {
-                    g.lineTo(p.x, p.y);
-                }
-            }
-            g.strokePath();
-
-            g.lineStyle(30, 0x7089a3, 1);
-            g.beginPath();
-            for (let i = 0; i < mapDef.path.length; i += 1) {
-                const p = worldToScreen(mapDef.path[i].x, mapDef.path[i].y);
-                if (i === 0) {
-                    g.moveTo(p.x, p.y);
-                } else {
-                    g.lineTo(p.x, p.y);
-                }
-            }
-            g.strokePath();
-
-            g.lineStyle(18, 0x8ea6bf, 0.95);
-            g.beginPath();
-            for (let i = 0; i < mapDef.path.length; i += 1) {
-                const p = worldToScreen(mapDef.path[i].x, mapDef.path[i].y);
-                if (i === 0) {
-                    g.moveTo(p.x, p.y);
-                } else {
-                    g.lineTo(p.x, p.y);
-                }
-            }
-            g.strokePath();
-
-            g.lineStyle(2, 0xe9f5ff, 0.38);
-            g.beginPath();
-            for (let i = 0; i < mapDef.path.length; i += 1) {
-                const p = worldToScreen(mapDef.path[i].x, mapDef.path[i].y);
-                if (i === 0) {
-                    g.moveTo(p.x, p.y);
-                } else {
-                    g.lineTo(p.x, p.y);
-                }
-            }
-            g.strokePath();
+            drawPathLayer(50, 0x2c392d, 1);
+            drawPathLayer(32, 0x4c5a44, 1);
+            drawPathLayer(15, 0x6a7a5f, 1);
+            drawPathLayer(3, 0xcfd9bb, 0.25);
 
             const spawn = worldToScreen(mapDef.spawn.x, mapDef.spawn.y);
-            g.fillStyle(0x6bc8ff, 0.28);
-            g.fillCircle(spawn.x, spawn.y, 28);
-            g.fillStyle(0x8fd7ff, 1);
-            g.fillCircle(spawn.x, spawn.y, 18);
-            g.lineStyle(3, 0xc8f0ff, 0.8);
-            g.strokeCircle(spawn.x, spawn.y, 24);
+            g.fillStyle(0x859a72, 0.95);
+            g.fillRect(spawn.x - 14, spawn.y - 14, 28, 28);
+            g.fillStyle(0x151b13, 1);
+            g.fillRect(spawn.x - 7, spawn.y - 7, 14, 14);
+            g.lineStyle(2, 0xdce7c8, 0.68);
+            g.strokeRect(spawn.x - 15, spawn.y - 15, 30, 30);
 
             for (const slot of mapDef.towerSlots) {
                 const p = worldToScreen(slot.x, slot.y);
-                g.fillStyle(0x14263a, 0.72);
-                g.fillCircle(p.x, p.y, 24);
-                g.lineStyle(2, 0x96c8ff, 0.48);
-                g.strokeCircle(p.x, p.y, 22);
-                g.lineStyle(1, 0xb4dcff, 0.2);
-                g.strokeCircle(p.x, p.y, 16);
+                g.fillStyle(0x211117, 0.84);
+                g.fillRect(p.x - 22, p.y - 22, 44, 44);
+                g.lineStyle(2, 0xb48795, 0.54);
+                g.strokeRect(p.x - 20, p.y - 20, 40, 40);
+                g.fillStyle(0x0f070a, 0.7);
+                g.fillRect(p.x - 12, p.y - 12, 24, 24);
             }
 
             const base = worldToScreen(state.base.x, state.base.y);
-            g.fillStyle(0xff7fa0, 0.3);
-            g.fillCircle(base.x, base.y, state.base.radius + 16);
-            g.fillStyle(0xff8ea4, 1);
-            g.fillCircle(base.x, base.y, state.base.radius);
-            g.lineStyle(3, 0xffdce5, 0.75);
-            g.strokeCircle(base.x, base.y, state.base.radius + 4);
-            g.fillStyle(0xfff1f5, 1);
-            g.fillRect(base.x - 11, base.y - 32, 22, 24);
+            const baseWidth = state.base.radius * 2 + 24;
+            const baseHeight = state.base.radius + 24;
+            g.fillStyle(0x3f4a56, 0.95);
+            g.fillRect(
+                base.x - baseWidth / 2,
+                base.y - baseHeight / 2,
+                baseWidth,
+                baseHeight,
+            );
+            g.fillStyle(0x2b333c, 1);
+            g.fillRect(base.x - 18, base.y - baseHeight / 2 - 8, 36, 16);
+            g.fillStyle(0x121820, 1);
+            g.fillRect(base.x + 8, base.y - baseHeight / 2 - 2, 24, 4);
+            g.lineStyle(2, 0xaac0d1, 0.6);
+            g.strokeRect(
+                base.x - baseWidth / 2,
+                base.y - baseHeight / 2,
+                baseWidth,
+                baseHeight,
+            );
             this.drawHealthBar(
                 g,
                 base.x,
-                base.y - 62,
+                base.y - baseHeight / 2 - 24,
                 100,
                 state.base.hp,
                 state.base.maxHp,
-                0xff7e9b,
+                0xff9f8f,
             );
         }
 
@@ -528,9 +525,12 @@
 
         drawTowerSprite(g, tower, p) {
             const baseColor = parseColor(tower.color).color;
-            const dark = this.tintColor(baseColor, 0.56);
-            const mid = this.tintColor(baseColor, 0.84);
-            const bright = this.tintColor(baseColor, 1.24);
+            const dark = this.tintColor(baseColor, 0.62);
+            const bright = this.tintColor(baseColor, 1.22);
+            const steel = 0x7b8189;
+            const barrel = 0x11161e;
+            const level = Math.max(1, Math.min(3, tower.level || 1));
+            const tierScale = level === 1 ? 1 : level === 2 ? 1.12 : 1.26;
             const phase =
                 (Number.parseInt(
                     String(tower.id || "").replace(/\D+/g, ""),
@@ -539,131 +539,248 @@
             const pulse = 0.84 + Math.sin(this.time.now * 0.008 + phase) * 0.16;
 
             g.fillStyle(0x000000, 0.26);
-            g.fillEllipse(
-                p.x,
-                p.y + 18,
-                tower.isBarricade ? 56 : 38,
-                tower.isBarricade ? 14 : 10,
+            g.fillRect(
+                p.x - (tower.isBarricade ? 28 : Math.round(20 * tierScale)),
+                p.y + 17,
+                tower.isBarricade ? 56 : Math.round(40 * tierScale),
+                4,
             );
 
             if (tower.isBarricade) {
                 const width =
-                    tower.level === 1 ? 36 : tower.level === 2 ? 44 : 52;
+                    tower.level === 1 ? 34 : tower.level === 2 ? 42 : 52;
                 const height =
-                    tower.level === 1 ? 24 : tower.level === 2 ? 28 : 32;
-                g.fillStyle(dark, 1);
-                g.fillRect(p.x - width / 2, p.y - 6, width, height);
-                g.lineStyle(2, bright, 0.55);
-                g.strokeRect(p.x - width / 2, p.y - 6, width, height);
-
-                g.fillStyle(this.tintColor(baseColor, 1.12), 0.9);
+                    tower.level === 1 ? 18 : tower.level === 2 ? 22 : 28;
+                const left = Math.round(p.x - width / 2);
+                const top = Math.round(p.y - height / 2 + 2);
+                g.fillStyle(0x4d3f2f, 1);
+                g.fillRect(left, top, width, height);
+                g.fillStyle(0x6d5841, 0.95);
+                g.fillRect(left + 2, top + 2, width - 4, height - 4);
+                g.lineStyle(2, 0xcbb58f, 0.55);
+                g.strokeRect(left, top, width, height);
+                g.fillStyle(0x2b2117, 0.95);
                 for (let i = 0; i < 4; i += 1) {
-                    const sx = p.x - width / 2 + 6 + i * ((width - 12) / 3);
-                    g.fillCircle(sx, p.y - 8 + (i % 2) * 3, 5);
+                    const x = left + 4 + i * ((width - 8) / 4);
+                    g.fillRect(x, top + height - 6, 3, 4);
                 }
-
-                g.lineStyle(2, 0xd8cab5, 0.75);
-                g.beginPath();
-                g.moveTo(p.x - width / 2 + 4, p.y + 7);
-                g.lineTo(p.x + width / 2 - 4, p.y + 7);
-                g.strokePath();
+                if (level >= 2) {
+                    g.fillStyle(0xd8c29b, 0.9);
+                    g.fillRect(left + 5, top - 3, 4, 3);
+                    g.fillRect(left + width - 9, top - 3, 4, 3);
+                }
+                if (level >= 3) {
+                    g.fillStyle(0xcdb48d, 0.95);
+                    for (let i = 0; i < 4; i += 1) {
+                        g.fillRect(left + 8 + i * 10, top - 4, 2, 4);
+                    }
+                }
                 return;
             }
 
-            g.fillStyle(0x132337, 1);
-            g.fillCircle(p.x, p.y + 7, 16);
-            g.fillStyle(mid, 1);
-            g.fillCircle(p.x, p.y + 4, 14);
-            g.lineStyle(2, bright, 0.6);
-            g.strokeCircle(p.x, p.y + 4, 14);
+            g.fillStyle(steel, 0.95);
+            g.fillRect(
+                p.x - Math.round(16 * tierScale),
+                p.y + 8,
+                Math.round(32 * tierScale),
+                5,
+            );
+            g.fillStyle(this.tintColor(steel, 1.18), 0.9);
+            g.fillRect(
+                p.x - Math.round(14 * tierScale),
+                p.y + 9,
+                Math.round(28 * tierScale),
+                2,
+            );
 
             if (tower.type === "infantry") {
-                g.fillStyle(baseColor, 1);
-                g.fillCircle(p.x, p.y - 8, 9);
                 g.fillStyle(dark, 1);
-                g.fillRect(p.x - 9, p.y - 8, 18, 10);
-                g.fillStyle(0xe8f3ff, 0.95);
-                g.fillRect(p.x + 3, p.y - 10, 12, 3);
+                g.fillRect(
+                    p.x - Math.round(13 * tierScale),
+                    p.y - 2,
+                    Math.round(26 * tierScale),
+                    12,
+                );
+                g.fillStyle(baseColor, 1);
+                g.fillRect(
+                    p.x - Math.round(7 * tierScale),
+                    p.y - 9,
+                    Math.round(14 * tierScale),
+                    8,
+                );
+                g.fillStyle(0x1f2938, 1);
+                g.fillRect(p.x + Math.round(6 * tierScale), p.y - 5, 12, 3);
+                g.fillStyle(0xe6edf8, 0.85);
+                g.fillRect(p.x - 2, p.y - 6, 4, 2);
+                if (level >= 2) {
+                    g.fillStyle(this.tintColor(baseColor, 1.12), 1);
+                    g.fillRect(p.x - 12, p.y - 1, 3, 7);
+                    g.fillRect(p.x + 9, p.y - 1, 3, 7);
+                }
+                if (level >= 3) {
+                    g.fillStyle(0x1f2938, 1);
+                    g.fillRect(p.x + 6, p.y - 8, 13, 2);
+                    g.fillRect(p.x + 6, p.y - 3, 13, 2);
+                }
             } else if (tower.type === "machineGun") {
                 g.fillStyle(dark, 1);
-                g.fillRect(p.x - 10, p.y - 8, 20, 10);
+                g.fillRect(
+                    p.x - Math.round(14 * tierScale),
+                    p.y - 1,
+                    Math.round(28 * tierScale),
+                    11,
+                );
                 g.fillStyle(baseColor, 1);
-                g.fillCircle(p.x, p.y - 12, 7);
-                g.lineStyle(2.5, 0xe3f6ff, 0.9);
-                g.beginPath();
-                g.moveTo(p.x + 3, p.y - 12);
-                g.lineTo(p.x + 16, p.y - 14);
-                g.moveTo(p.x + 3, p.y - 8);
-                g.lineTo(p.x + 16, p.y - 10);
-                g.strokePath();
+                g.fillRect(
+                    p.x - Math.round(8 * tierScale),
+                    p.y - 8,
+                    Math.round(16 * tierScale),
+                    7,
+                );
+                g.fillStyle(barrel, 1);
+                g.fillRect(p.x + Math.round(6 * tierScale), p.y - 8, 14, 2);
+                g.fillRect(p.x + Math.round(6 * tierScale), p.y - 4, 14, 2);
+                g.fillStyle(0x8f7350, 1);
+                g.fillRect(p.x - Math.round(15 * tierScale), p.y - 2, 4, 9);
+                if (level >= 2) {
+                    g.fillStyle(this.tintColor(baseColor, 1.1), 0.95);
+                    g.fillRect(p.x - 4, p.y - 12, 8, 4);
+                }
+                if (level >= 3) {
+                    g.fillStyle(barrel, 1);
+                    g.fillRect(p.x + Math.round(6 * tierScale), p.y - 6, 14, 2);
+                    g.fillStyle(0x2a323f, 0.95);
+                    g.fillRect(p.x - 2, p.y - 13, 4, 5);
+                }
             } else if (tower.type === "cannon") {
-                g.fillStyle(this.tintColor(baseColor, 0.65), 1);
-                g.fillCircle(p.x - 9, p.y - 3, 5);
-                g.fillCircle(p.x + 9, p.y - 3, 5);
+                g.fillStyle(dark, 1);
+                g.fillRect(
+                    p.x - Math.round(16 * tierScale),
+                    p.y - 1,
+                    Math.round(32 * tierScale),
+                    11,
+                );
                 g.fillStyle(baseColor, 1);
-                g.fillRect(p.x - 11, p.y - 10, 22, 10);
-                g.fillStyle(0xf5dec1, 0.95);
-                g.fillRect(p.x + 2, p.y - 14, 16, 4);
-                g.fillStyle(0x2f4054, 1);
-                g.fillCircle(p.x + 18, p.y - 12, 3);
+                g.fillRect(
+                    p.x - Math.round(10 * tierScale),
+                    p.y - 9,
+                    Math.round(20 * tierScale),
+                    8,
+                );
+                g.fillStyle(barrel, 1);
+                g.fillRect(p.x + Math.round(6 * tierScale), p.y - 7, 18, 4);
+                g.fillStyle(0x8d949d, 1);
+                g.fillRect(p.x - Math.round(14 * tierScale), p.y + 8, 5, 5);
+                g.fillRect(p.x + Math.round(9 * tierScale), p.y + 8, 5, 5);
+                if (level >= 2) {
+                    g.fillStyle(barrel, 1);
+                    g.fillRect(p.x + Math.round(8 * tierScale), p.y - 11, 18, 3);
+                }
+                if (level >= 3) {
+                    g.fillStyle(0x2c3440, 1);
+                    g.fillRect(p.x + Math.round(9 * tierScale), p.y - 4, 18, 3);
+                }
             } else if (tower.type === "missile") {
                 g.fillStyle(dark, 1);
-                g.fillRect(p.x - 10, p.y - 8, 20, 11);
+                g.fillRect(
+                    p.x - Math.round(14 * tierScale),
+                    p.y - 1,
+                    Math.round(28 * tierScale),
+                    11,
+                );
                 g.fillStyle(baseColor, 1);
-                g.fillTriangle(
-                    p.x - 8,
-                    p.y - 12,
-                    p.x - 4,
-                    p.y - 22,
-                    p.x,
-                    p.y - 12,
+                g.fillRect(
+                    p.x - Math.round(9 * tierScale),
+                    p.y - 8,
+                    Math.round(18 * tierScale),
+                    7,
                 );
-                g.fillTriangle(
-                    p.x,
-                    p.y - 12,
-                    p.x + 4,
-                    p.y - 24,
-                    p.x + 8,
-                    p.y - 12,
-                );
-                g.fillStyle(0xefe9de, 1);
-                g.fillRect(p.x - 1, p.y - 20, 2, 8);
-                g.lineStyle(2, 0xffbcc6, 0.7 + pulse * 0.25);
-                g.strokeCircle(p.x, p.y - 10, 15);
+                g.fillStyle(0xe5ddd2, 1);
+                g.fillRect(p.x - 6, p.y - 16, 4, 14);
+                g.fillRect(p.x + 2, p.y - 16, 4, 14);
+                g.fillStyle(0x242d3c, 1);
+                g.fillRect(p.x - 5, p.y - 17, 2, 2);
+                g.fillRect(p.x + 3, p.y - 17, 2, 2);
+                if (level >= 2) {
+                    g.fillStyle(0xe5ddd2, 1);
+                    g.fillRect(p.x - 11, p.y - 14, 3, 11);
+                    g.fillRect(p.x + 8, p.y - 14, 3, 11);
+                }
+                if (level >= 3) {
+                    g.fillStyle(this.tintColor(baseColor, 1.15), 0.95);
+                    g.fillRect(p.x - 2, p.y - 22, 4, 5);
+                    g.fillStyle(0x293142, 1);
+                    g.fillRect(p.x - 1, p.y - 12, 2, 7);
+                }
             } else if (tower.type === "laser") {
                 g.fillStyle(dark, 1);
-                g.fillRect(p.x - 9, p.y - 7, 18, 12);
-                g.fillStyle(baseColor, 1);
-                g.fillTriangle(
-                    p.x,
-                    p.y - 24,
-                    p.x - 7,
-                    p.y - 10,
-                    p.x + 7,
-                    p.y - 10,
+                g.fillRect(
+                    p.x - Math.round(13 * tierScale),
+                    p.y - 1,
+                    Math.round(26 * tierScale),
+                    11,
                 );
-                g.lineStyle(2, 0xaef4ff, 0.8 + pulse * 0.2);
-                g.strokeCircle(p.x, p.y - 10, 12);
+                g.fillStyle(baseColor, 1);
+                g.fillRect(p.x - 4, p.y - 11, 8, 10);
+                g.fillStyle(0xafefff, 0.95);
+                g.fillRect(p.x + 4, p.y - 7, 13, 2);
+                g.fillRect(p.x + 4, p.y - 4, 13, 2);
+                if (level >= 2) {
+                    g.fillStyle(0xafefff, 0.9);
+                    g.fillRect(p.x + 4, p.y - 10, 11, 2);
+                }
+                if (level >= 3) {
+                    g.fillStyle(0xdaf9ff, 0.95);
+                    g.fillRect(p.x - 1, p.y - 15, 2, 4);
+                    g.fillRect(p.x - 6, p.y - 12, 12, 2);
+                }
+                const auraPad = level === 3 ? 22 : level === 2 ? 20 : 18;
+                g.lineStyle(2, 0x8fdcff, 0.5 + pulse * 0.3);
+                g.strokeRect(
+                    p.x - auraPad,
+                    p.y - (auraPad - 2),
+                    auraPad * 2,
+                    auraPad + 8,
+                );
             } else if (tower.type === "command") {
                 g.fillStyle(dark, 1);
-                g.fillCircle(p.x, p.y - 8, 12);
+                g.fillRect(
+                    p.x - Math.round(14 * tierScale),
+                    p.y - 1,
+                    Math.round(28 * tierScale),
+                    11,
+                );
                 g.fillStyle(baseColor, 1);
-                g.fillCircle(p.x, p.y - 8, 9);
-                g.fillStyle(0xffffff, 0.95);
-                g.fillRect(p.x - 1, p.y - 16, 2, 11);
-                g.fillRect(p.x - 5, p.y - 12, 10, 2);
-                g.lineStyle(2, bright, 0.48 + pulse * 0.25);
-                g.strokeCircle(p.x, p.y - 8, 20 + pulse * 2);
+                g.fillRect(
+                    p.x - Math.round(9 * tierScale),
+                    p.y - 9,
+                    Math.round(18 * tierScale),
+                    8,
+                );
+                g.fillStyle(0xf2f5ff, 0.95);
+                g.fillRect(p.x - 1, p.y - 16, 2, 8);
+                g.fillRect(p.x - 6, p.y - 12, 12, 2);
+                if (level >= 2) {
+                    g.fillStyle(0xf2f5ff, 0.95);
+                    g.fillRect(p.x - 8, p.y - 14, 2, 5);
+                    g.fillRect(p.x + 6, p.y - 14, 2, 5);
+                }
+                if (level >= 3) {
+                    g.fillStyle(bright, 0.92);
+                    g.fillRect(p.x - 10, p.y - 18, 20, 2);
+                    g.fillRect(p.x + 8, p.y - 18, 8, 1);
+                }
+                g.lineStyle(2, bright, 0.35 + pulse * 0.3);
+                g.strokeRect(p.x - 20 - pulse * 2, p.y - 19 - pulse * 2, 40 + pulse * 4, 28 + pulse * 4);
             } else {
                 g.fillStyle(baseColor, 1);
-                g.fillCircle(p.x, p.y - 8, 10);
+                g.fillRect(p.x - 12, p.y - 4, 24, 14);
             }
         }
 
         drawEnemySprite(g, enemy, p) {
             const baseColor = parseColor(enemy.color).color;
-            const dark = this.tintColor(baseColor, 0.52);
-            const mid = this.tintColor(baseColor, 0.82);
+            const dark = this.tintColor(baseColor, 0.58);
             const bright = this.tintColor(baseColor, 1.22);
             const phase =
                 (Number.parseInt(
@@ -671,230 +788,180 @@
                     10,
                 ) || 0) * 0.27;
             const bob = Math.sin(this.time.now * 0.009 + phase) * 1.4;
-            const y =
-                enemy.visualType === "drone" ||
-                enemy.visualType === "boss-shadow"
-                    ? p.y - 6 + bob
-                    : p.y;
+            const y = enemy.visualType === "drone" ? p.y - 6 + bob : p.y;
+            const steel = 0x7b8189;
+            const barrel = 0x121820;
 
-            g.fillStyle(
-                0x000000,
-                enemy.visualType === "drone" ||
-                    enemy.visualType === "boss-shadow"
-                    ? 0.14
-                    : 0.24,
-            );
-            g.fillEllipse(
-                p.x,
+            g.fillStyle(0x000000, enemy.isBoss ? 0.3 : 0.22);
+            g.fillRect(
+                p.x - (enemy.isBoss ? 30 : enemy.radius + 8),
                 p.y + enemy.radius + 6,
-                enemy.isBoss ? 56 : enemy.radius * 2 + 12,
-                enemy.isBoss ? 16 : 9,
+                enemy.isBoss ? 60 : enemy.radius * 2 + 16,
+                enemy.isBoss ? 5 : 4,
             );
 
-            if (enemy.visualType === "infantry") {
+            if (enemy.visualType === "drone") {
+                g.fillStyle(baseColor, 1);
+                g.fillRect(p.x - 8, y - 8, 16, 16);
+                g.fillStyle(bright, 0.95);
+                g.fillRect(p.x - 13, y - 2, 26, 4);
+                g.fillRect(p.x - 2, y - 13, 4, 26);
+                g.fillStyle(0x0f1318, 1);
+                g.fillRect(p.x - 2, y - 2, 4, 4);
+            } else if (enemy.visualType === "infantry") {
                 g.fillStyle(dark, 1);
-                g.fillRect(p.x - 6, y - 4, 12, 14);
+                g.fillRect(p.x - 7, y - 2, 14, 14);
                 g.fillStyle(baseColor, 1);
-                g.fillCircle(p.x, y - 10, 6);
-                g.fillStyle(0xf0f5ff, 0.95);
-                g.fillRect(p.x + 1, y - 5, 10, 2);
+                g.fillRect(p.x - 5, y - 10, 10, 8);
+                g.fillStyle(barrel, 1);
+                g.fillRect(p.x + 4, y - 3, 10, 3);
             } else if (enemy.visualType === "scout") {
+                g.fillStyle(dark, 1);
+                g.fillRect(p.x - 12, y + 2, 20, 6);
                 g.fillStyle(baseColor, 1);
-                g.fillTriangle(p.x - 7, y + 6, p.x + 10, y, p.x - 7, y - 6);
-                g.fillStyle(bright, 1);
-                g.fillCircle(p.x - 1, y - 8, 4);
+                g.fillRect(p.x - 6, y - 7, 14, 8);
+                g.fillStyle(bright, 0.95);
+                g.fillRect(p.x + 7, y - 4, 8, 2);
+                g.fillStyle(steel, 1);
+                g.fillRect(p.x - 11, y + 7, 4, 4);
+                g.fillRect(p.x + 5, y + 7, 4, 4);
             } else if (enemy.visualType === "armored") {
                 g.fillStyle(dark, 1);
-                g.fillRect(p.x - 8, y - 5, 16, 16);
-                g.fillStyle(mid, 1);
-                g.fillCircle(p.x, y - 11, 6);
-                g.fillStyle(this.tintColor(baseColor, 1.04), 1);
-                g.fillRect(p.x - 10, y - 2, 20, 4);
-            } else if (enemy.visualType === "sniper") {
+                g.fillRect(p.x - 10, y - 2, 20, 15);
                 g.fillStyle(baseColor, 1);
-                g.fillRect(p.x - 6, y - 4, 12, 14);
-                g.fillStyle(bright, 1);
-                g.fillCircle(p.x, y - 10, 5);
-                g.lineStyle(2.5, 0xfff3d4, 0.9);
-                g.beginPath();
-                g.moveTo(p.x + 4, y - 3);
-                g.lineTo(p.x + 20, y - 7);
-                g.strokePath();
+                g.fillRect(p.x - 7, y - 11, 14, 8);
+                g.fillStyle(this.tintColor(baseColor, 1.16), 1);
+                g.fillRect(p.x - 11, y + 1, 22, 4);
+            } else if (enemy.visualType === "sniper") {
+                g.fillStyle(dark, 1);
+                g.fillRect(p.x - 8, y - 2, 16, 14);
+                g.fillStyle(baseColor, 1);
+                g.fillRect(p.x - 6, y - 10, 12, 8);
+                g.fillStyle(barrel, 1);
+                g.fillRect(p.x + 6, y - 5, 16, 2);
+                g.fillStyle(0xf0dfbe, 1);
+                g.fillRect(p.x + 4, y - 7, 2, 3);
             } else if (enemy.visualType === "heavy") {
                 g.fillStyle(dark, 1);
-                g.fillRect(p.x - 10, y - 4, 20, 16);
+                g.fillRect(p.x - 11, y - 2, 22, 16);
                 g.fillStyle(baseColor, 1);
-                g.fillCircle(p.x, y - 11, 6);
-                g.fillStyle(0xffd3a5, 0.95);
-                g.fillRect(p.x + 2, y - 2, 12, 4);
-                g.fillStyle(0x2a3342, 1);
-                g.fillRect(p.x - 13, y - 3, 4, 15);
+                g.fillRect(p.x - 7, y - 10, 14, 8);
+                g.fillStyle(barrel, 1);
+                g.fillRect(p.x + 6, y - 4, 12, 4);
+                g.fillStyle(steel, 0.95);
+                g.fillRect(p.x - 14, y - 1, 4, 12);
             } else if (enemy.visualType === "commander") {
                 g.fillStyle(dark, 1);
-                g.fillRect(p.x - 8, y - 4, 16, 16);
+                g.fillRect(p.x - 9, y - 2, 18, 15);
                 g.fillStyle(baseColor, 1);
-                g.fillCircle(p.x, y - 11, 6);
+                g.fillRect(p.x - 6, y - 10, 12, 8);
+                g.fillStyle(0xf0f3f9, 1);
+                g.fillRect(p.x - 1, y - 16, 2, 6);
+                g.fillStyle(bright, 0.8);
+                g.fillRect(p.x + 1, y - 15, 5, 3);
                 g.lineStyle(2, bright, 0.55);
-                g.strokeCircle(p.x, y - 2, enemy.radius + 5);
-                g.fillStyle(0xffffff, 0.9);
-                g.fillRect(p.x - 1, y - 16, 2, 10);
+                g.strokeRect(p.x - enemy.radius - 4, y - 10, enemy.radius * 2 + 8, enemy.radius + 10);
             } else if (enemy.visualType === "shield") {
                 g.fillStyle(dark, 1);
-                g.fillRect(p.x - 7, y - 4, 14, 16);
+                g.fillRect(p.x - 8, y - 2, 16, 14);
                 g.fillStyle(baseColor, 1);
-                g.fillCircle(p.x - 1, y - 10, 5);
-                g.fillStyle(this.tintColor(baseColor, 1.28), 0.95);
-                g.fillEllipse(p.x + 7, y - 2, 12, 18);
-                g.lineStyle(1.5, 0xe6f5ff, 0.8);
-                g.strokeEllipse(p.x + 7, y - 2, 12, 18);
+                g.fillRect(p.x - 6, y - 10, 12, 8);
+                g.fillStyle(this.tintColor(baseColor, 1.24), 0.95);
+                g.fillRect(p.x + 8, y - 7, 8, 14);
+                g.lineStyle(1, 0xe4f5ff, 0.8);
+                g.strokeRect(p.x + 8, y - 7, 8, 14);
             } else if (enemy.visualType === "flame") {
                 g.fillStyle(dark, 1);
-                g.fillRect(p.x - 8, y - 4, 16, 15);
+                g.fillRect(p.x - 8, y - 2, 16, 14);
                 g.fillStyle(baseColor, 1);
-                g.fillCircle(p.x, y - 10, 5);
-                g.fillStyle(0xffd07d, 0.95);
-                g.fillTriangle(
-                    p.x + 4,
-                    y - 2,
-                    p.x + 17,
-                    y - 8,
-                    p.x + 10,
-                    y + 4,
-                );
-            } else if (enemy.visualType === "drone") {
-                g.lineStyle(2.5, dark, 1);
-                g.beginPath();
-                g.moveTo(p.x - 11, y);
-                g.lineTo(p.x + 11, y);
-                g.moveTo(p.x, y - 11);
-                g.lineTo(p.x, y + 11);
-                g.strokePath();
-                g.fillStyle(baseColor, 1);
-                g.fillCircle(p.x, y, 7);
-                g.fillStyle(bright, 0.95);
-                g.fillCircle(p.x - 11, y, 3.5);
-                g.fillCircle(p.x + 11, y, 3.5);
-                g.fillCircle(p.x, y - 11, 3.5);
-                g.fillCircle(p.x, y + 11, 3.5);
+                g.fillRect(p.x - 6, y - 10, 12, 8);
+                g.fillStyle(barrel, 1);
+                g.fillRect(p.x + 5, y - 3, 9, 3);
+                g.fillStyle(0xffc06b, 0.95);
+                g.fillRect(p.x + 14, y - 4, 6, 3);
             } else if (enemy.visualType === "vehicle") {
                 g.fillStyle(dark, 1);
-                g.fillRect(p.x - 14, y - 5, 28, 12);
-                g.fillStyle(mid, 1);
-                g.fillRect(p.x - 10, y - 10, 20, 8);
-                g.fillStyle(this.tintColor(baseColor, 1.08), 1);
-                g.fillTriangle(p.x + 14, y - 5, p.x + 20, y, p.x + 14, y + 7);
-                g.fillStyle(0x1f2733, 1);
-                g.fillCircle(p.x - 8, y + 8, 3);
-                g.fillCircle(p.x + 8, y + 8, 3);
+                g.fillRect(p.x - 16, y - 2, 32, 12);
+                g.fillStyle(baseColor, 1);
+                g.fillRect(p.x - 10, y - 9, 20, 8);
+                g.fillStyle(steel, 0.96);
+                g.fillRect(p.x - 13, y + 8, 26, 4);
+                g.fillStyle(barrel, 1);
+                g.fillRect(p.x + 4, y - 6, 10, 3);
             } else if (enemy.visualType === "tank") {
                 g.fillStyle(dark, 1);
-                g.fillRect(p.x - 18, y - 7, 36, 15);
-                g.fillStyle(mid, 1);
-                g.fillRect(p.x - 11, y - 13, 22, 10);
+                g.fillRect(p.x - 19, y - 2, 38, 13);
                 g.fillStyle(baseColor, 1);
-                g.fillCircle(p.x, y - 8, 7);
-                g.fillStyle(this.tintColor(baseColor, 1.18), 1);
-                g.fillRect(p.x + 4, y - 10, 17, 4);
-                g.fillStyle(0x202833, 1);
-                for (let i = -12; i <= 12; i += 8) {
-                    g.fillCircle(p.x + i, y + 9, 3);
-                }
+                g.fillRect(p.x - 12, y - 11, 24, 9);
+                g.fillStyle(this.tintColor(baseColor, 1.2), 0.95);
+                g.fillRect(p.x - 6, y - 14, 12, 4);
+                g.fillStyle(barrel, 1);
+                g.fillRect(p.x + 8, y - 8, 16, 4);
+                g.fillStyle(steel, 0.95);
+                g.fillRect(p.x - 15, y + 9, 30, 4);
             } else if (enemy.visualType === "rocket") {
                 g.fillStyle(dark, 1);
-                g.fillRect(p.x - 14, y - 5, 28, 12);
+                g.fillRect(p.x - 16, y - 2, 32, 12);
                 g.fillStyle(baseColor, 1);
-                g.fillRect(p.x - 8, y - 12, 16, 7);
-                g.fillStyle(0xffced5, 1);
-                g.fillTriangle(p.x - 6, y - 12, p.x - 3, y - 18, p.x, y - 12);
-                g.fillTriangle(
-                    p.x + 1,
-                    y - 12,
-                    p.x + 4,
-                    y - 18,
-                    p.x + 7,
-                    y - 12,
-                );
-                g.fillStyle(0x1f2733, 1);
-                g.fillCircle(p.x - 8, y + 8, 3);
-                g.fillCircle(p.x + 8, y + 8, 3);
+                g.fillRect(p.x - 10, y - 10, 20, 8);
+                g.fillStyle(0xe9ddd0, 1);
+                g.fillRect(p.x - 5, y - 16, 3, 8);
+                g.fillRect(p.x + 1, y - 16, 3, 8);
+                g.fillStyle(steel, 1);
+                g.fillRect(p.x - 13, y + 8, 26, 4);
             } else if (enemy.visualType === "mortar") {
                 g.fillStyle(dark, 1);
-                g.fillRect(p.x - 15, y - 5, 30, 12);
-                g.fillStyle(mid, 1);
-                g.fillRect(p.x - 11, y - 11, 22, 7);
-                g.fillStyle(this.tintColor(baseColor, 1.2), 1);
-                g.fillRect(p.x - 2, y - 18, 7, 14);
-                g.fillStyle(0x1f2733, 1);
-                g.fillCircle(p.x - 9, y + 8, 3);
-                g.fillCircle(p.x + 9, y + 8, 3);
+                g.fillRect(p.x - 17, y - 2, 34, 12);
+                g.fillStyle(baseColor, 1);
+                g.fillRect(p.x - 11, y - 10, 22, 8);
+                g.fillStyle(barrel, 1);
+                g.fillRect(p.x + 2, y - 19, 6, 10);
+                g.fillStyle(steel, 1);
+                g.fillRect(p.x - 14, y + 8, 28, 4);
             } else if (enemy.visualType === "boss-core") {
-                g.fillStyle(this.tintColor(baseColor, 0.45), 0.92);
-                g.fillCircle(p.x, y, 29);
-                g.fillStyle(mid, 1);
-                g.fillCircle(p.x, y, 23);
-                g.fillStyle(bright, 1);
-                g.fillCircle(p.x, y, 15);
-                g.fillStyle(0xfff3f6, 0.95);
-                g.fillCircle(p.x, y, 5);
-                g.fillStyle(this.tintColor(baseColor, 0.72), 0.9);
-                for (let i = 0; i < 6; i += 1) {
-                    const angle = (Math.PI * 2 * i) / 6;
-                    const ox = Math.cos(angle) * 30;
-                    const oy = Math.sin(angle) * 30;
-                    g.fillTriangle(
-                        p.x + ox,
-                        y + oy,
-                        p.x + ox * 0.6 - 4,
-                        y + oy * 0.6 + 3,
-                        p.x + ox * 0.6 + 4,
-                        y + oy * 0.6 - 3,
-                    );
-                }
-            } else if (enemy.visualType === "boss-iron") {
                 g.fillStyle(this.tintColor(baseColor, 0.5), 1);
-                g.fillRect(p.x - 30, y - 11, 60, 21);
-                g.fillStyle(mid, 1);
-                g.fillRect(p.x - 20, y - 21, 40, 13);
+                g.fillRect(p.x - 30, y - 20, 60, 40);
                 g.fillStyle(baseColor, 1);
-                g.fillCircle(p.x, y - 14, 10);
-                g.fillStyle(this.tintColor(baseColor, 1.25), 1);
-                g.fillRect(p.x + 8, y - 17, 25, 6);
-                g.fillStyle(0x212a36, 1);
-                for (let i = -24; i <= 24; i += 8) {
-                    g.fillCircle(p.x + i, y + 12, 3.5);
-                }
+                g.fillRect(p.x - 22, y - 14, 44, 28);
+                g.fillStyle(this.tintColor(baseColor, 1.26), 1);
+                g.fillRect(p.x - 10, y - 8, 20, 16);
+                g.fillStyle(0xf8e9dd, 0.95);
+                g.fillRect(p.x - 3, y - 3, 6, 6);
+                g.lineStyle(2, bright, 0.55);
+                g.strokeRect(p.x - 34, y - 24, 68, 48);
+            } else if (enemy.visualType === "boss-iron") {
+                g.fillStyle(this.tintColor(baseColor, 0.48), 1);
+                g.fillRect(p.x - 36, y - 14, 72, 28);
+                g.fillStyle(baseColor, 1);
+                g.fillRect(p.x - 22, y - 24, 44, 14);
+                g.fillStyle(this.tintColor(baseColor, 1.22), 1);
+                g.fillRect(p.x - 7, y - 20, 14, 8);
+                g.fillStyle(barrel, 1);
+                g.fillRect(p.x + 10, y - 18, 26, 6);
+                g.fillStyle(steel, 0.95);
+                g.fillRect(p.x - 30, y + 13, 60, 6);
+                g.lineStyle(2, bright, 0.5);
+                g.strokeRect(p.x - 40, y - 28, 80, 50);
             } else if (enemy.visualType === "boss-shadow") {
-                g.fillStyle(this.tintColor(baseColor, 0.4), 0.5);
-                g.fillCircle(p.x, y, 34);
-                g.fillStyle(this.tintColor(baseColor, 0.7), 0.9);
-                g.fillCircle(p.x, y, 26);
+                g.fillStyle(this.tintColor(baseColor, 0.42), 0.62);
+                g.fillRect(p.x - 32, y - 26, 64, 52);
+                g.fillStyle(this.tintColor(baseColor, 0.76), 0.9);
+                g.fillRect(p.x - 24, y - 18, 48, 36);
                 g.fillStyle(baseColor, 1);
-                g.fillCircle(p.x, y, 18);
-                g.fillStyle(0xf0e6ff, 0.92);
-                g.fillEllipse(p.x, y, 16, 8);
-                g.lineStyle(2, this.tintColor(baseColor, 1.35), 0.48);
-                g.strokeCircle(
-                    p.x,
-                    y,
-                    34 + Math.sin(this.time.now * 0.01 + phase) * 2,
-                );
+                g.fillRect(p.x - 14, y - 10, 28, 20);
+                g.fillStyle(0xf0e7ff, 0.92);
+                g.fillRect(p.x - 6, y - 2, 12, 4);
+                g.lineStyle(2, this.tintColor(baseColor, 1.3), 0.44 + Math.sin(this.time.now * 0.01 + phase) * 0.2);
+                g.strokeRect(p.x - 36, y - 30, 72, 60);
             } else {
-                g.fillStyle(baseColor, enemy.isBoss ? 0.95 : 1);
-                g.fillCircle(
-                    p.x,
-                    y,
-                    enemy.isBoss ? enemy.radius + 4 : enemy.radius,
-                );
+                g.fillStyle(baseColor, 1);
+                g.fillRect(p.x - 10, y - 10, 20, 20);
             }
 
             if (enemy.canAttackStructures) {
-                g.lineStyle(1.5, 0xff9da7, 0.85);
-                g.beginPath();
-                g.moveTo(p.x - 4, y - enemy.radius - 4);
-                g.lineTo(p.x + 4, y - enemy.radius - 4);
-                g.moveTo(p.x, y - enemy.radius - 8);
-                g.lineTo(p.x, y);
-                g.strokePath();
+                g.fillStyle(0xff9da7, 0.92);
+                g.fillRect(p.x - 4, y - enemy.radius - 9, 8, 3);
+                g.fillRect(p.x - 1, y - enemy.radius - 13, 2, 10);
             }
         }
 
@@ -912,6 +979,11 @@
                 if (tower.type === "laser" && tower.laserBeam.active) {
                     const startX = p.x;
                     const startY = p.y - 10;
+                    const level = Math.max(1, Math.min(3, tower.level || 1));
+                    const outerColor =
+                        level === 3 ? 0x5cf0ff : level === 2 ? 0x66e7ff : 0x65e7ff;
+                    const coreColor =
+                        level === 3 ? 0xefffff : level === 2 ? 0xd8fbff : 0xe6feff;
                     const beams = [tower.laserBeam].concat(
                         Array.isArray(tower.extraLaserBeams)
                             ? tower.extraLaserBeams
@@ -926,23 +998,42 @@
                         const endX = VIEW.worldX + beam.endX;
                         const endY = VIEW.worldY + beam.endY;
                         const falloff = beamIndex === 0 ? 1 : 0.78;
-                        g.lineStyle(10 * falloff, 0x65e7ff, 0.18 * falloff);
+                        const outerWidth =
+                            (level === 3 ? 12 : level === 2 ? 10 : 8) * falloff;
+                        const innerWidth =
+                            (level === 3 ? 6.5 : level === 2 ? 5.2 : 4.5) * falloff;
+                        const coreWidth =
+                            (level === 3 ? 3 : level === 2 ? 2.5 : 2.1) * falloff;
+                        g.lineStyle(outerWidth, outerColor, 0.16 * falloff);
                         g.beginPath();
                         g.moveTo(startX, startY);
                         g.lineTo(endX, endY);
                         g.strokePath();
-                        g.lineStyle(5 * falloff, 0x9ff4ff, 0.48 * falloff);
+                        g.lineStyle(innerWidth, 0x9ff4ff, 0.42 * falloff);
                         g.beginPath();
                         g.moveTo(startX, startY);
                         g.lineTo(endX, endY);
                         g.strokePath();
-                        g.lineStyle(2.2 * falloff, 0xe6feff, 0.92 * falloff);
+                        g.lineStyle(coreWidth, coreColor, 0.9 * falloff);
                         g.beginPath();
                         g.moveTo(startX, startY);
                         g.lineTo(endX, endY);
                         g.strokePath();
-                        g.fillStyle(0xe6feff, 0.88 * falloff);
-                        g.fillCircle(endX, endY, 4 * falloff);
+                        g.fillStyle(coreColor, 0.88 * falloff);
+                        g.fillCircle(
+                            endX,
+                            endY,
+                            (level === 3 ? 5 : level === 2 ? 4.5 : 4) * falloff,
+                        );
+                        if (level >= 3) {
+                            g.lineStyle(1.2 * falloff, 0xb8fdff, 0.42 * falloff);
+                            g.beginPath();
+                            g.moveTo(startX, startY - 4);
+                            g.lineTo(endX, endY - 4);
+                            g.moveTo(startX, startY + 4);
+                            g.lineTo(endX, endY + 4);
+                            g.strokePath();
+                        }
                     }
                 }
 
@@ -1022,8 +1113,17 @@
             const g = this.entityGraphics;
             for (const projectile of state.projectiles) {
                 const p = worldToScreen(projectile.x, projectile.y);
+                const level = Math.max(
+                    1,
+                    Math.min(3, Number(projectile.visualLevel) || 1),
+                );
+                const age = (performance.now() - (projectile.createdAt || 0)) / 1000;
+                const pulse = 0.65 + Math.sin(age * 26) * 0.35;
                 if (projectile.type === "laser") {
-                    g.lineStyle(3, 0xb6f7ff, 0.88);
+                    const laserWidth = level === 3 ? 5 : level === 2 ? 4 : 3;
+                    const laserColor =
+                        level === 3 ? 0xdffeff : level === 2 ? 0xbef7ff : 0xa8f0ff;
+                    g.lineStyle(laserWidth, laserColor, 0.9);
                     g.beginPath();
                     g.moveTo(
                         VIEW.worldX + projectile.prevX,
@@ -1031,15 +1131,88 @@
                     );
                     g.lineTo(p.x, p.y);
                     g.strokePath();
+                    g.lineStyle(
+                        level === 3 ? 2.6 : level === 2 ? 2.2 : 1.8,
+                        0xecfcff,
+                        0.62,
+                    );
+                    g.beginPath();
+                    g.moveTo(
+                        VIEW.worldX + projectile.prevX,
+                        VIEW.worldY + projectile.prevY,
+                    );
+                    g.lineTo(p.x, p.y);
+                    g.strokePath();
+                    if (level >= 3) {
+                        g.lineStyle(1, 0xc0fbff, 0.44 * pulse);
+                        g.beginPath();
+                        g.moveTo(
+                            VIEW.worldX + projectile.prevX,
+                            VIEW.worldY + projectile.prevY - 2,
+                        );
+                        g.lineTo(p.x, p.y - 2);
+                        g.moveTo(
+                            VIEW.worldX + projectile.prevX,
+                            VIEW.worldY + projectile.prevY + 2,
+                        );
+                        g.lineTo(p.x, p.y + 2);
+                        g.strokePath();
+                    }
                 } else if (projectile.type === "missile") {
-                    g.fillStyle(0xff6a79, 1);
-                    g.fillCircle(p.x, p.y, 5);
+                    const w = level === 3 ? 14 : level === 2 ? 12 : 10;
+                    const h = level === 3 ? 5 : 4;
+                    const bodyColor =
+                        projectile.fromType === "tower" ? 0xffae7c : 0xff6f72;
+                    g.fillStyle(bodyColor, 1);
+                    g.fillRect(p.x - w / 2, p.y - h / 2, w, h);
+                    g.fillStyle(0x2b3344, 0.95);
+                    g.fillRect(p.x + w / 2 - 2, p.y - h / 2, 2, h);
+                    g.fillStyle(0xffd9a1, 0.8 + pulse * 0.2);
+                    g.fillRect(p.x - w / 2 - 2, p.y - 1, 2, 2);
+                    if (level >= 2) {
+                        g.fillStyle(0xe9ddd2, 1);
+                        g.fillRect(p.x - 1, p.y - h / 2 - 2, 2, 2);
+                    }
+                    if (level >= 3) {
+                        g.fillStyle(0xf0e6dc, 1);
+                        g.fillRect(p.x - 3, p.y - h / 2 - 2, 2, 2);
+                        g.fillRect(p.x + 1, p.y - h / 2 - 2, 2, 2);
+                    }
                 } else if (projectile.type === "shell") {
-                    g.fillStyle(0xffbe73, 1);
-                    g.fillCircle(p.x, p.y, 4);
+                    const w = level === 3 ? 10 : level === 2 ? 9 : 8;
+                    const h = level === 3 ? 7 : 6;
+                    g.fillStyle(level === 3 ? 0xffc06f : 0xffc272, 1);
+                    g.fillRect(p.x - w / 2, p.y - h / 2, w, h);
+                    g.fillStyle(0x2f3642, 0.95);
+                    g.fillRect(p.x + w / 2 - 2, p.y - h / 2 + 1, 2, h - 2);
+                    if (level >= 2) {
+                        g.lineStyle(1, 0xffe1a9, 0.65);
+                        g.strokeRect(p.x - w / 2, p.y - h / 2, w, h);
+                    }
                 } else {
-                    g.fillStyle(0xf3f8ff, 1);
-                    g.fillCircle(p.x, p.y, 3);
+                    if (projectile.fromType === "tower") {
+                        if (projectile.towerType === "machineGun") {
+                            const w = level === 3 ? 8 : level === 2 ? 7 : 6;
+                            g.fillStyle(0xc8ffd7, 1);
+                            g.fillRect(p.x - w / 2, p.y - 1, w, 2);
+                            g.fillStyle(0xa4f7bd, 0.65);
+                            g.fillRect(p.x - w / 2 - 2, p.y - 1, 2, 2);
+                        } else if (projectile.towerType === "infantry") {
+                            const w = level === 3 ? 7 : level === 2 ? 6 : 5;
+                            g.fillStyle(0xf3f8ff, 1);
+                            g.fillRect(p.x - w / 2, p.y - 1, w, 2);
+                            if (level >= 2) {
+                                g.fillStyle(0xdbe9ff, 0.65);
+                                g.fillRect(p.x - w / 2 - 2, p.y - 1, 2, 2);
+                            }
+                        } else {
+                            g.fillStyle(0xf3f8ff, 1);
+                            g.fillRect(p.x - 2, p.y - 1, 4, 2);
+                        }
+                    } else {
+                        g.fillStyle(0xffc2b6, 1);
+                        g.fillRect(p.x - 2, p.y - 1, 4, 2);
+                    }
                 }
             }
         }
@@ -1217,55 +1390,58 @@
                     45,
                     VIEW.width - 24,
                     80,
-                    0x0b1725,
-                    0.9,
+                    UI_THEME.topbarBg,
+                    0.95,
                 )
-                .setStrokeStyle(1, 0x6195d8, 0.35);
+                .setStrokeStyle(1, UI_THEME.topbarBorder, 0.55);
+            this.add
+                .rectangle(VIEW.width / 2, 45, VIEW.width - 44, 50, 0x2a0f16, 0.5)
+                .setStrokeStyle(1, 0x96695c, 0.35);
             this.add.image(52, 45, "flag-vn").setDisplaySize(52, 34);
             this.add
                 .image(VIEW.width - 52, 45, "flag-us")
                 .setDisplaySize(52, 34);
 
             this.hudTexts.baseHp = this.add.text(96, 20, "", {
-                fontFamily: "Trebuchet MS",
+                fontFamily: UI_THEME.fontFamily,
                 fontSize: "15px",
-                color: "#dce8f7",
+                color: UI_THEME.textPrimary,
             });
             this.hudTexts.supplies = this.add.text(96, 42, "", {
-                fontFamily: "Trebuchet MS",
+                fontFamily: UI_THEME.fontFamily,
                 fontSize: "15px",
-                color: "#dce8f7",
+                color: UI_THEME.textPrimary,
             });
             this.hudTexts.cp = this.add.text(320, 20, "", {
-                fontFamily: "Trebuchet MS",
+                fontFamily: UI_THEME.fontFamily,
                 fontSize: "15px",
-                color: "#dce8f7",
+                color: UI_THEME.textPrimary,
             });
             this.hudTexts.wave = this.add.text(320, 42, "", {
-                fontFamily: "Trebuchet MS",
+                fontFamily: UI_THEME.fontFamily,
                 fontSize: "15px",
-                color: "#dce8f7",
+                color: UI_THEME.textPrimary,
             });
             this.hudTexts.enemy = this.add.text(520, 20, "", {
-                fontFamily: "Trebuchet MS",
+                fontFamily: UI_THEME.fontFamily,
                 fontSize: "15px",
-                color: "#dce8f7",
+                color: UI_THEME.textPrimary,
             });
             this.hudTexts.quiz = this.add.text(520, 42, "", {
-                fontFamily: "Trebuchet MS",
+                fontFamily: UI_THEME.fontFamily,
                 fontSize: "15px",
-                color: "#9fb7d3",
+                color: UI_THEME.textMuted,
             });
             this.hudTexts.waveState = this.add.text(740, 30, "", {
-                fontFamily: "Trebuchet MS",
+                fontFamily: UI_THEME.fontFamily,
                 fontSize: "14px",
-                color: "#9fb7d3",
+                color: UI_THEME.textMuted,
             });
             this.hudTexts.boss = this.add
                 .text(740, 52, "BOSS ARRIVED!", {
-                    fontFamily: "Trebuchet MS",
+                    fontFamily: UI_THEME.fontFamily,
                     fontSize: "16px",
-                    color: "#ff9aa5",
+                    color: "#ffad8f",
                 })
                 .setVisible(false);
 
@@ -1275,6 +1451,8 @@
                 width: 120,
                 height: 30,
                 label: "Pause",
+                baseColor: 0x4a2d23,
+                lineColor: 0xc49a7c,
                 onClick: () => {
                     if (App.state.mode !== "playing") {
                         return;
@@ -1291,6 +1469,8 @@
                 width: 120,
                 height: 30,
                 label: "Guide",
+                baseColor: 0x374b2d,
+                lineColor: 0xaec488,
                 onClick: () =>
                     App.state.bus.emit(App.uiEventNames.OPEN_HELP, {}),
             });
@@ -1303,27 +1483,57 @@
                     VIEW.panelY + VIEW.panelHeight / 2,
                     VIEW.panelWidth,
                     VIEW.panelHeight,
-                    0x09121d,
-                    0.92,
+                    UI_THEME.panelBg,
+                    0.96,
                 )
-                .setStrokeStyle(1, 0x6195d8, 0.35);
+                .setStrokeStyle(1, UI_THEME.panelBorder, 0.7);
+            this.add
+                .rectangle(
+                    VIEW.panelX + VIEW.panelWidth / 2,
+                    VIEW.panelY + 175,
+                    VIEW.panelWidth - 14,
+                    260,
+                    0x230f15,
+                    0.6,
+                )
+                .setStrokeStyle(1, 0x8f6252, 0.38);
+            this.add
+                .rectangle(
+                    VIEW.panelX + VIEW.panelWidth / 2,
+                    VIEW.panelY + 390,
+                    VIEW.panelWidth - 14,
+                    132,
+                    0x210f14,
+                    0.52,
+                )
+                .setStrokeStyle(1, 0x7a5547, 0.32);
+            this.add
+                .rectangle(
+                    VIEW.panelX + VIEW.panelWidth / 2,
+                    VIEW.panelY + 594,
+                    VIEW.panelWidth - 14,
+                    126,
+                    0x221017,
+                    0.58,
+                )
+                .setStrokeStyle(1, 0x8b6355, 0.34);
             this.add
                 .text(
                     VIEW.panelX + 10,
                     VIEW.panelY + 10,
                     "Build towers (drag)",
                     {
-                        fontFamily: "Trebuchet MS",
+                        fontFamily: UI_THEME.fontFamily,
                         fontSize: "14px",
-                        color: "#dce8f7",
+                        color: UI_THEME.textPrimary,
                     },
                 )
                 .setDepth(20);
             this.add
                 .text(VIEW.panelX + 10, VIEW.panelY + 312, "Skills", {
-                    fontFamily: "Trebuchet MS",
+                    fontFamily: UI_THEME.fontFamily,
                     fontSize: "13px",
-                    color: "#dce8f7",
+                    color: UI_THEME.textPrimary,
                 })
                 .setDepth(20);
         }
@@ -1346,101 +1556,55 @@
 
         createTowerCardIcon(type, color) {
             const baseColor = parseColor(color).color;
-            const dark = this.tintCardColor(baseColor, 0.58);
-            const bright = this.tintCardColor(baseColor, 1.22);
+            const dark = this.tintCardColor(baseColor, 0.62);
+            const bright = this.tintCardColor(baseColor, 1.2);
+            const steel = 0x7a8088;
+            const barrel = 0x121821;
 
             const icon = this.add.container(-122, 0);
             const ring = this.add
-                .circle(0, 0, 13, 0x132338, 0.96)
-                .setStrokeStyle(1, bright, 0.65);
+                .rectangle(0, 0, 28, 28, 0x201017, 0.95)
+                .setStrokeStyle(1, 0xab7966, 0.62);
             icon.add(ring);
 
             if (type === "infantry") {
-                icon.add(this.add.circle(-1, -4, 4.4, baseColor, 1));
-                icon.add(this.add.rectangle(-1, 4, 8, 8, dark, 1));
-                icon.add(this.add.rectangle(5, 3, 7, 2, 0xe7f3ff, 0.95));
+                icon.add(this.add.rectangle(-1, 4, 14, 8, dark, 1));
+                icon.add(this.add.rectangle(-1, -3, 8, 6, baseColor, 1));
+                icon.add(this.add.rectangle(6, -1, 8, 2, barrel, 1));
             } else if (type === "machineGun") {
-                icon.add(this.add.rectangle(-1, 3, 10, 7, dark, 1));
-                icon.add(this.add.circle(-1, -3, 4.4, baseColor, 1));
-                icon.add(this.add.rectangle(5, -1, 9, 2, 0xe2f4ff, 0.95));
-                icon.add(this.add.rectangle(5, 2, 9, 2, 0xe2f4ff, 0.95));
+                icon.add(this.add.rectangle(-1, 4, 15, 8, dark, 1));
+                icon.add(this.add.rectangle(-1, -2, 10, 5, baseColor, 1));
+                icon.add(this.add.rectangle(7, -3, 9, 2, barrel, 1));
+                icon.add(this.add.rectangle(7, 0, 9, 2, barrel, 1));
             } else if (type === "cannon") {
-                icon.add(this.add.rectangle(-2, 3, 12, 7, baseColor, 1));
-                icon.add(this.add.circle(-6, 5, 2.8, dark, 1));
-                icon.add(this.add.circle(3, 5, 2.8, dark, 1));
-                icon.add(this.add.rectangle(5, -1, 10, 2.8, 0xf5dfc3, 1));
+                icon.add(this.add.rectangle(-2, 5, 16, 8, dark, 1));
+                icon.add(this.add.rectangle(-3, -2, 12, 6, baseColor, 1));
+                icon.add(this.add.rectangle(6, -2, 11, 3, barrel, 1));
+                icon.add(this.add.rectangle(-8, 7, 4, 4, steel, 1));
+                icon.add(this.add.rectangle(3, 7, 4, 4, steel, 1));
             } else if (type === "missile") {
-                icon.add(this.add.rectangle(-1, 3, 10, 7, dark, 1));
-                icon.add(
-                    this.add.triangle(
-                        -4,
-                        -3,
-                        -4,
-                        2,
-                        -1,
-                        -5,
-                        2,
-                        2,
-                        baseColor,
-                        1,
-                    ),
-                );
-                icon.add(
-                    this.add.triangle(3, -3, 3, 2, 6, -6, 9, 2, baseColor, 1),
-                );
+                icon.add(this.add.rectangle(-1, 4, 14, 8, dark, 1));
+                icon.add(this.add.rectangle(-4, -4, 3, 10, baseColor, 1));
+                icon.add(this.add.rectangle(2, -4, 3, 10, baseColor, 1));
+                icon.add(this.add.rectangle(6, -1, 8, 2, barrel, 1));
             } else if (type === "laser") {
-                icon.add(this.add.rectangle(-1, 3, 10, 7, dark, 1));
-                icon.add(
-                    this.add.triangle(
-                        -1,
-                        -5,
-                        -5,
-                        1,
-                        -1,
-                        -7,
-                        3,
-                        1,
-                        baseColor,
-                        1,
-                    ),
-                );
-                icon.add(this.add.rectangle(7, -4, 9, 1.8, 0xbbf7ff, 0.95));
+                icon.add(this.add.rectangle(-1, 4, 14, 8, dark, 1));
+                icon.add(this.add.rectangle(-1, -3, 6, 6, baseColor, 1));
+                icon.add(this.add.rectangle(6, -3, 8, 2, 0xbbf7ff, 0.95));
+                icon.add(this.add.rectangle(6, 0, 8, 2, 0xbbf7ff, 0.9));
             } else if (type === "command") {
-                icon.add(this.add.circle(-1, -2, 5, baseColor, 1));
-                icon.add(this.add.rectangle(-1, -6, 1.6, 8, 0xffffff, 0.95));
-                icon.add(this.add.rectangle(-4, -3, 7, 1.6, 0xffffff, 0.95));
-                icon.add(this.add.circle(-1, -2, 9, bright, 0.18));
+                icon.add(this.add.rectangle(-1, 4, 14, 8, dark, 1));
+                icon.add(this.add.rectangle(-1, -4, 9, 5, baseColor, 1));
+                icon.add(this.add.rectangle(-1, -9, 2, 6, 0xffffff, 0.95));
+                icon.add(this.add.rectangle(-4, -6, 8, 2, 0xffffff, 0.95));
+                icon.add(this.add.rectangle(-1, -1, 16, 1, bright, 0.35));
             } else if (type === "barricade") {
-                icon.add(this.add.rectangle(-1, 3, 15, 9, dark, 1));
-                icon.add(
-                    this.add.circle(
-                        -5,
-                        -2,
-                        2.2,
-                        this.tintCardColor(baseColor, 1.1),
-                        0.95,
-                    ),
-                );
-                icon.add(
-                    this.add.circle(
-                        -1,
-                        1,
-                        2.2,
-                        this.tintCardColor(baseColor, 1.1),
-                        0.95,
-                    ),
-                );
-                icon.add(
-                    this.add.circle(
-                        3,
-                        -2,
-                        2.2,
-                        this.tintCardColor(baseColor, 1.1),
-                        0.95,
-                    ),
-                );
+                icon.add(this.add.rectangle(-1, 5, 18, 8, dark, 1));
+                icon.add(this.add.rectangle(-6, 1, 4, 4, bright, 0.95));
+                icon.add(this.add.rectangle(-1, 1, 4, 4, bright, 0.95));
+                icon.add(this.add.rectangle(4, 1, 4, 4, bright, 0.95));
             } else {
-                icon.add(this.add.circle(0, 0, 6, baseColor, 1));
+                icon.add(this.add.rectangle(0, 0, 10, 10, baseColor, 1));
             }
 
             return icon;
@@ -1462,38 +1626,38 @@
                         0,
                         VIEW.panelWidth - 20,
                         cardHeight,
-                        0x1b2b42,
-                        0.88,
+                        UI_THEME.cardBg,
+                        0.92,
                     )
-                    .setStrokeStyle(1, 0x77a9e8, 0.28);
+                    .setStrokeStyle(1, UI_THEME.cardBorder, 0.42);
                 const icon = this.createTowerCardIcon(card.type, card.color);
                 const name = this.add.text(-98, -10, card.name, {
-                    fontFamily: "Trebuchet MS",
+                    fontFamily: UI_THEME.fontFamily,
                     fontSize: "12px",
-                    color: "#dce8f7",
+                    color: UI_THEME.textPrimary,
                 });
                 const meta = this.add.text(
                     -98,
                     4,
                     `Cost ${card.cost} | DMG ${card.damage}`,
                     {
-                        fontFamily: "Trebuchet MS",
+                        fontFamily: UI_THEME.fontFamily,
                         fontSize: "11px",
-                        color: "#98abc4",
+                        color: UI_THEME.textMuted,
                     },
                 );
                 const plus = this.add
-                    .rectangle(88, 0, 84, 22, 0x2d8b5d, 1)
-                    .setStrokeStyle(1, 0x7cff9e, 0.55)
+                    .rectangle(88, 0, 84, 22, 0x3c4f2f, 1)
+                    .setStrokeStyle(1, 0xb7cc90, 0.62)
                     .setInteractive({ useHandCursor: true });
                 plus.on("pointerdown", () =>
                     App.uiSystem.quickUpgradeByTowerType(App.state, card.type),
                 );
                 const plusText = this.add
                     .text(88, 0, "Nang cap tru", {
-                        fontFamily: "Trebuchet MS",
+                        fontFamily: UI_THEME.fontFamily,
                         fontSize: "10px",
-                        color: "#dce8f7",
+                        color: "#e9f2d8",
                     })
                     .setOrigin(0.5);
                 container.add([bg, icon, name, meta, plus, plusText]);
@@ -1522,6 +1686,12 @@
             const defs = Object.values(App.config.skills);
             let y = VIEW.panelY + 346;
             for (const skill of defs) {
+                const palette =
+                    skill.id === "artilleryStrike"
+                        ? { baseColor: 0x4c3728, lineColor: 0xc4a27f }
+                        : skill.id === "emergencyRepair"
+                          ? { baseColor: 0x2f4a46, lineColor: 0x9fc9bc }
+                          : { baseColor: 0x3c3658, lineColor: 0xb2a9d4 };
                 const button = makeButton(this, {
                     x: VIEW.panelX + VIEW.panelWidth / 2,
                     y,
@@ -1529,13 +1699,15 @@
                     height: 26,
                     label: `${skill.name} (${skill.costCP} CP)`,
                     fontSize: "12px",
+                    baseColor: palette.baseColor,
+                    lineColor: palette.lineColor,
                     onClick: () =>
                         App.skillSystem.useSkill(App.state, skill.id),
                 });
                 const cd = this.add.text(VIEW.panelX + 14, y + 14, "", {
-                    fontFamily: "Trebuchet MS",
+                    fontFamily: UI_THEME.fontFamily,
                     fontSize: "10px",
-                    color: "#98abc4",
+                    color: UI_THEME.textMuted,
                 });
                 this.skillRefs.push({ id: skill.id, button, cd });
                 y += 40;
@@ -1550,8 +1722,8 @@
                 height: 28,
                 label: "Bắt đầu ngay",
                 fontSize: "12px",
-                baseColor: 0x2d8b5d,
-                lineColor: 0x7cff9e,
+                baseColor: 0x415b33,
+                lineColor: 0xb8d59b,
                 onClick: () => App.waveSystem.callEarlyStart(App.state),
             });
             this.quizButton = makeButton(this, {
@@ -1561,8 +1733,8 @@
                 height: 28,
                 label: "Nhận tiếp tế",
                 fontSize: "12px",
-                baseColor: 0x1a5c7b,
-                lineColor: 0x6fdcff,
+                baseColor: 0x5a3424,
+                lineColor: 0xd8af84,
                 onClick: () =>
                     App.state.bus.emit(App.uiEventNames.OPEN_QUIZ, {}),
             });
@@ -1574,9 +1746,9 @@
                 VIEW.panelY + 532,
                 "",
                 {
-                    fontFamily: "Trebuchet MS",
+                    fontFamily: UI_THEME.fontFamily,
                     fontSize: "13px",
-                    color: "#dce8f7",
+                    color: UI_THEME.textPrimary,
                 },
             );
             this.detailTexts.line1 = this.add.text(
@@ -1584,9 +1756,9 @@
                 VIEW.panelY + 549,
                 "",
                 {
-                    fontFamily: "Trebuchet MS",
+                    fontFamily: UI_THEME.fontFamily,
                     fontSize: "11px",
-                    color: "#98abc4",
+                    color: UI_THEME.textMuted,
                 },
             );
             this.detailTexts.line2 = this.add.text(
@@ -1594,9 +1766,9 @@
                 VIEW.panelY + 564,
                 "",
                 {
-                    fontFamily: "Trebuchet MS",
+                    fontFamily: UI_THEME.fontFamily,
                     fontSize: "11px",
-                    color: "#98abc4",
+                    color: UI_THEME.textMuted,
                 },
             );
 
@@ -1606,6 +1778,8 @@
                 width: 80,
                 height: 28,
                 label: "Upgrade",
+                baseColor: 0x3a4f2d,
+                lineColor: 0xb6cb91,
                 onClick: () => App.uiSystem.upgradeSelectedTower(App.state),
             });
             this.towerButtons.repair = makeButton(this, {
@@ -1614,6 +1788,8 @@
                 width: 80,
                 height: 28,
                 label: "Repair",
+                baseColor: 0x34504b,
+                lineColor: 0x9bcabf,
                 onClick: () => App.uiSystem.repairSelectedTower(App.state),
             });
             this.towerButtons.sell = makeButton(this, {
@@ -1622,8 +1798,8 @@
                 width: 80,
                 height: 28,
                 label: "Sell",
-                baseColor: 0x8f3643,
-                lineColor: 0xff6f7d,
+                baseColor: 0x6f2e33,
+                lineColor: 0xe99e84,
                 onClick: () => App.uiSystem.sellSelectedTower(App.state),
             });
             this.towerButtons.dmg = makeButton(this, {
@@ -1632,6 +1808,8 @@
                 width: 80,
                 height: 26,
                 label: "+DMG",
+                baseColor: 0x4e3428,
+                lineColor: 0xcda984,
                 onClick: () =>
                     App.uiSystem.pointUpgradeSelectedTower(App.state, "damage"),
             });
@@ -1641,6 +1819,8 @@
                 width: 80,
                 height: 26,
                 label: "+HP",
+                baseColor: 0x2f4a3f,
+                lineColor: 0x9dc3b4,
                 onClick: () =>
                     App.uiSystem.pointUpgradeSelectedTower(App.state, "hp"),
             });
@@ -1650,6 +1830,8 @@
                 width: 80,
                 height: 26,
                 label: "+SPD",
+                baseColor: 0x3e3555,
+                lineColor: 0xbaabd7,
                 onClick: () =>
                     App.uiSystem.pointUpgradeSelectedTower(App.state, "speed"),
             });
@@ -1661,6 +1843,8 @@
                 height: 30,
                 fontSize: "11px",
                 label: "Base+",
+                baseColor: 0x4e412d,
+                lineColor: 0xceba91,
                 onClick: () => App.uiSystem.upgradeBase(App.state),
             });
             this.baseButtons.maxHp = makeButton(this, {
@@ -1670,6 +1854,8 @@
                 height: 30,
                 fontSize: "11px",
                 label: "MaxHP",
+                baseColor: 0x2c4b2e,
+                lineColor: 0xaed399,
                 onClick: () => App.uiSystem.boostBaseHp(App.state),
             });
             this.baseButtons.heal = makeButton(this, {
@@ -1679,6 +1865,8 @@
                 height: 30,
                 fontSize: "11px",
                 label: "Heal",
+                baseColor: 0x2f4d46,
+                lineColor: 0x9fc9bc,
                 onClick: () => App.uiSystem.healBase(App.state),
             });
         }
@@ -1694,7 +1882,7 @@
                 App.state.drag.hoverValid = false;
                 const bg = object.getData("bg");
                 if (bg) {
-                    bg.setFillStyle(0x355375, 0.95);
+                    bg.setFillStyle(0x4a2731, 0.96);
                 }
             });
 
@@ -1754,7 +1942,7 @@
                 object.y = object.getData("originY");
                 const bg = object.getData("bg");
                 if (bg) {
-                    bg.setFillStyle(0x1b2b42, 0.88);
+                    bg.setFillStyle(UI_THEME.cardBg, 0.92);
                 }
             });
         }

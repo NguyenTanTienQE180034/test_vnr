@@ -19,7 +19,7 @@
             healPercent: 0.32,
         },
         resources: {
-            startSupplies: 260,
+            startSupplies: 560,
             startCommandPoints: 0,
         },
         wave: {
