@@ -67,12 +67,16 @@
 
     function getPointUpgradeCostByType(state, towerType, statKey) {
         const tech = getTowerTech(state, towerType);
+        const def = App.towersData[towerType];
         const cfg = App.towersData[towerType].pointUpgrade[statKey];
         if (!cfg) {
             return null;
         }
         const step = tech.pointUpgradeLevels[statKey] || 0;
-        return cfg.costCP + Math.floor(step / 3);
+        const baseCost = Math.floor(def.cost * 0.28) + cfg.costCP * 12;
+        const growthMultiplier = 1 + step * 0.65 + step * step * 0.2;
+        const scaled = baseCost * growthMultiplier;
+        return Math.ceil(scaled / 5) * 5;
     }
 
     function upgradeTowerType(state, towerType) {
@@ -123,15 +127,15 @@
             return { ok: false, reason: "locked" };
         }
 
-        const cpCost = getPointUpgradeCostByType(state, towerType, statKey);
-        if (!spendCP(state, cpCost)) {
+        const cost = getPointUpgradeCostByType(state, towerType, statKey);
+        if (state.supplies < cost) {
             const any = state.towers.find((t) => t.type === towerType);
             if (any) {
                 App.Effects.addFloatingText(
                     state,
                     any.x - 10,
                     any.y - 24,
-                    "Thieu CP",
+                    "Thieu tiep te",
                     "#ff8e95",
                 );
             } else {
@@ -139,12 +143,13 @@
                     state,
                     26,
                     158,
-                    "Thieu CP",
+                    "Thieu tiep te",
                     "#ff8e95",
                 );
             }
-            return { ok: false, reason: "insufficient-cp", cpCost };
+            return { ok: false, reason: "insufficient-supplies", cost };
         }
+        state.supplies -= cost;
 
         const tech = getTowerTech(state, towerType);
         tech.pointUpgradeLevels[statKey] += 1;
@@ -173,7 +178,7 @@
                 "#8fdfff",
             );
         }
-        return { ok: true, cpCost };
+        return { ok: true, cost };
     }
 
     function upgradeSelectedTower(state) {
@@ -394,25 +399,25 @@
                 pointDamage: {
                     enabled:
                         canPointUpgradeTowerType(state, tower.type, "damage") &&
-                        state.commandPoints >= dmgCost,
+                        state.supplies >= dmgCost,
                     text: canPointUpgradeTowerType(state, tower.type, "damage")
-                        ? `+SAT THUONG (${dmgCost} CP)`
+                        ? `+SAT THUONG (${dmgCost} tiep te)`
                         : "+SAT THUONG (Lv3)",
                 },
                 pointHp: {
                     enabled:
                         canPointUpgradeTowerType(state, tower.type, "hp") &&
-                        state.commandPoints >= hpCost,
+                        state.supplies >= hpCost,
                     text: canPointUpgradeTowerType(state, tower.type, "hp")
-                        ? `+HP (${hpCost} CP)`
+                        ? `+HP (${hpCost} tiep te)`
                         : "+HP (Lv3)",
                 },
                 pointSpeed: {
                     enabled:
                         canPointUpgradeTowerType(state, tower.type, "speed") &&
-                        state.commandPoints >= spdCost,
+                        state.supplies >= spdCost,
                     text: canPointUpgradeTowerType(state, tower.type, "speed")
-                        ? `+TOC BAN (${spdCost} CP)`
+                        ? `+TOC BAN (${spdCost} tiep te)`
                         : "+TOC BAN (Lv3)",
                 },
             },

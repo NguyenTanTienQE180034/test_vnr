@@ -413,16 +413,16 @@
             g.clear();
             const mapDef = App.map.getMap(state.level);
 
-            g.fillStyle(0x2a0b10, 1);
+            g.fillStyle(0xa1ad90, 1);
             g.fillRect(
                 VIEW.worldX,
                 VIEW.worldY,
                 VIEW.worldWidth,
                 VIEW.worldHeight,
             );
-            g.fillStyle(0x3b1119, 0.55);
+            g.fillStyle(0xb6c1a5, 0.44);
             g.fillRect(VIEW.worldX, VIEW.worldY + 24, VIEW.worldWidth, 120);
-            g.fillStyle(0x1a060a, 0.45);
+            g.fillStyle(0x8f9c80, 0.32);
             g.fillRect(
                 VIEW.worldX,
                 VIEW.worldY + VIEW.worldHeight - 170,
@@ -433,7 +433,7 @@
             for (let gy = VIEW.worldY; gy < VIEW.worldY + VIEW.worldHeight; gy += 56) {
                 for (let gx = VIEW.worldX; gx < VIEW.worldX + VIEW.worldWidth; gx += 56) {
                     const checker = ((gx + gy) / 56) % 2 === 0;
-                    g.fillStyle(checker ? 0x2f0d13 : 0x24090f, 0.32);
+                    g.fillStyle(checker ? 0xacb79a : 0x95a084, 0.3);
                     g.fillRect(gx + 2, gy + 2, 52, 52);
                 }
             }
@@ -452,44 +452,44 @@
                 g.strokePath();
             };
 
-            drawPathLayer(50, 0x2c392d, 1);
-            drawPathLayer(32, 0x4c5a44, 1);
-            drawPathLayer(15, 0x6a7a5f, 1);
-            drawPathLayer(3, 0xcfd9bb, 0.25);
+            drawPathLayer(50, 0x5f5848, 1);
+            drawPathLayer(32, 0x786c56, 1);
+            drawPathLayer(15, 0x978666, 1);
+            drawPathLayer(3, 0xd4c39f, 0.22);
 
             const spawn = worldToScreen(mapDef.spawn.x, mapDef.spawn.y);
-            g.fillStyle(0x859a72, 0.95);
+            g.fillStyle(0x8fab76, 0.95);
             g.fillRect(spawn.x - 14, spawn.y - 14, 28, 28);
-            g.fillStyle(0x151b13, 1);
+            g.fillStyle(0x4d6243, 1);
             g.fillRect(spawn.x - 7, spawn.y - 7, 14, 14);
-            g.lineStyle(2, 0xdce7c8, 0.68);
+            g.lineStyle(2, 0xdfe7c6, 0.74);
             g.strokeRect(spawn.x - 15, spawn.y - 15, 30, 30);
 
             for (const slot of mapDef.towerSlots) {
                 const p = worldToScreen(slot.x, slot.y);
-                g.fillStyle(0x211117, 0.84);
+                g.fillStyle(0x6a6758, 0.82);
                 g.fillRect(p.x - 22, p.y - 22, 44, 44);
-                g.lineStyle(2, 0xb48795, 0.54);
+                g.lineStyle(2, 0xcfc39f, 0.52);
                 g.strokeRect(p.x - 20, p.y - 20, 40, 40);
-                g.fillStyle(0x0f070a, 0.7);
+                g.fillStyle(0x7f7a67, 0.66);
                 g.fillRect(p.x - 12, p.y - 12, 24, 24);
             }
 
             const base = worldToScreen(state.base.x, state.base.y);
             const baseWidth = state.base.radius * 2 + 24;
             const baseHeight = state.base.radius + 24;
-            g.fillStyle(0x3f4a56, 0.95);
+            g.fillStyle(0x6e7d87, 0.95);
             g.fillRect(
                 base.x - baseWidth / 2,
                 base.y - baseHeight / 2,
                 baseWidth,
                 baseHeight,
             );
-            g.fillStyle(0x2b333c, 1);
+            g.fillStyle(0x5c6d78, 1);
             g.fillRect(base.x - 18, base.y - baseHeight / 2 - 8, 36, 16);
-            g.fillStyle(0x121820, 1);
+            g.fillStyle(0x3b4b56, 1);
             g.fillRect(base.x + 8, base.y - baseHeight / 2 - 2, 24, 4);
-            g.lineStyle(2, 0xaac0d1, 0.6);
+            g.lineStyle(2, 0xcad8e3, 0.62);
             g.strokeRect(
                 base.x - baseWidth / 2,
                 base.y - baseHeight / 2,
@@ -544,6 +544,13 @@
                 p.y + 17,
                 tower.isBarricade ? 56 : Math.round(40 * tierScale),
                 4,
+            );
+            g.lineStyle(1.6, 0x101318, 0.62);
+            g.strokeRect(
+                p.x - (tower.isBarricade ? 26 : Math.round(18 * tierScale)),
+                p.y - 14,
+                tower.isBarricade ? 52 : Math.round(36 * tierScale),
+                tower.isBarricade ? 28 : 25,
             );
 
             if (tower.isBarricade) {

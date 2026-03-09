@@ -17,7 +17,7 @@
       armor: 10,
       projectileSpeed: 430,
       cost: 80,
-      upgradeCost: [180, 320],
+      upgradeCost: [280, 520],
       splashRadius: 0,
       targetMode: "progress",
       levelScaling: {
@@ -49,7 +49,7 @@
       armor: 6,
       projectileSpeed: 520,
       cost: 120,
-      upgradeCost: [260, 480],
+      upgradeCost: [390, 720],
       splashRadius: 0,
       targetMode: "progress",
       levelScaling: {
@@ -81,7 +81,7 @@
       armor: 16,
       projectileSpeed: 300,
       cost: 200,
-      upgradeCost: [420, 760],
+      upgradeCost: [620, 1120],
       splashRadius: 80,
       targetMode: "progress",
       levelScaling: {
@@ -113,7 +113,7 @@
       armor: 10,
       projectileSpeed: 260,
       cost: 350,
-      upgradeCost: [760, 1280],
+      upgradeCost: [980, 1700],
       splashRadius: 90,
       targetMode: "progress",
       levelScaling: {
@@ -145,7 +145,7 @@
       armor: 8,
       projectileSpeed: 700,
       cost: 260,
-      upgradeCost: [620, 1040],
+      upgradeCost: [820, 1420],
       splashRadius: 0,
       targetMode: "progress",
       defaultSpecial: {
@@ -181,7 +181,7 @@
       armor: 22,
       projectileSpeed: 500,
       cost: 230,
-      upgradeCost: [460, 780],
+      upgradeCost: [700, 1240],
       splashRadius: 0,
       targetMode: "progress",
       aura: {
@@ -219,7 +219,7 @@
       armor: 35,
       projectileSpeed: 0,
       cost: 150,
-      upgradeCost: [340, 620],
+      upgradeCost: [560, 980],
       splashRadius: 0,
       targetMode: "none",
       levelScaling: {

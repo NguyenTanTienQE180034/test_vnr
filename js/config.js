@@ -8,7 +8,7 @@
             height: 620,
         },
         base: {
-            maxHp: 4200,
+            maxHp: 7200,
             armor: 20,
             upgradeCost: [3, 5],
             levelHpMultiplier: [1, 1.35, 1.8],
