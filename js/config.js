@@ -25,7 +25,7 @@
         wave: {
             prepDuration: 6,
             durationSec: 30,
-            baseSpawnInterval: 0.48,
+            baseSpawnInterval: 0.9,
             earlyStartRewardBase: 45,
         },
         quiz: {
@@ -39,9 +39,17 @@
             collisionRadius: 16,
         },
         scaling: {
-            enemyWaveMultiplier: 3,
-            bossWaveMultiplier: 5,
-            spawnGrowthPerWave: 3,
+            enemyHpGrowth: 1.18,
+            enemyDamageGrowth: 1.1,
+            enemySpeedGrowthPerWave: 0.012,
+            enemyArmorStep: 2,
+            enemyArmorEvery: 3,
+            bossHpGrowth: 1.22,
+            bossDamageGrowth: 1.12,
+            bossSpeedGrowthPerWave: 0.01,
+            bossArmorStep: 4,
+            bossArmorEvery: 2,
+            spawnGrowthPerWave: 2,
         },
         skills: {
             artilleryStrike: {

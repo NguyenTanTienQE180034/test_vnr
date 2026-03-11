@@ -407,13 +407,19 @@
 
   function handleBossAbilities(state, boss, mapPath) {
     boss.updatePhase();
+    const cooldowns = boss.bossAbilityCooldowns || {
+      summon: 10,
+      missile: 7,
+      shockwave: 9,
+      armorMode: 11,
+    };
 
     if (boss.phase === 3) {
       boss.buffs.speedMult = Math.max(boss.buffs.speedMult, 1.28);
       boss.buffs.damageMult = Math.max(boss.buffs.damageMult, 1.3);
     }
 
-    if (boss.abilityTimers.summon <= 0) {
+    if (boss.allowSummonMinions && boss.abilityTimers.summon <= 0) {
       const count = boss.phase === 1 ? 2 : boss.phase === 2 ? 3 : 4;
       for (let i = 0; i < count; i += 1) {
         const summonType = i % 2 === 0 ? "basicSoldier" : "fastScout";
@@ -422,30 +428,41 @@
         summon.setPosition(mapPath[0].x, mapPath[0].y);
         state.enemies.push(summon);
       }
-      boss.abilityTimers.summon = 10;
+      boss.abilityTimers.summon = cooldowns.summon;
       App.Effects.addExplosion(state, boss.x, boss.y, 40, "rgba(255,120,120,0.4)");
     }
 
     if (boss.phase >= 2 && boss.abilityTimers.missile <= 0) {
-      const targetTower = state.towers.find((tower) => tower.hp > 0) || state.base;
-      spawnProjectile(state, {
-        fromType: "enemy",
-        fromId: boss.id,
-        toType: targetTower.id === state.base.id ? "base" : "tower",
-        toId: targetTower.id,
-        targetRef: targetTower,
-        x: boss.x,
-        y: boss.y,
-        targetX: targetTower.x,
-        targetY: targetTower.y,
-        speed: 250,
-        damage: boss.getDamage() * 1.15,
-        splashRadius: 95,
-        type: "missile",
-        damageType: "explosive",
-        color: "#ff6a74",
-      });
-      boss.abilityTimers.missile = 7;
+      const abilityRange = boss.attackRange + 35;
+      const targetTower = state.towers
+        .filter((tower) => tower.hp > 0 && App.map.distance(tower, boss) <= abilityRange)
+        .sort((a, b) => App.map.distance(a, boss) - App.map.distance(b, boss))[0];
+      const baseInRange = App.map.distance(state.base, boss) <= abilityRange + 20;
+      const target = targetTower || (baseInRange ? state.base : null);
+
+      if (target) {
+        spawnProjectile(state, {
+          fromType: "enemy",
+          fromId: boss.id,
+          toType: target.id === state.base.id ? "base" : "tower",
+          toId: target.id,
+          targetRef: target,
+          x: boss.x,
+          y: boss.y,
+          targetX: target.x,
+          targetY: target.y,
+          speed: 250,
+          damage: boss.getDamage() * 1.15,
+          splashRadius: 95,
+          type: "missile",
+          damageType: "explosive",
+          color: "#ff6a74",
+        });
+        boss.abilityTimers.missile = cooldowns.missile;
+      } else {
+        // Retry soon when boss has moved closer instead of sniping from across the map.
+        boss.abilityTimers.missile = 0.8;
+      }
     }
 
     if (boss.abilityTimers.shockwave <= 0) {
@@ -459,13 +476,13 @@
           App.Effects.addFloatingText(state, tower.x - 12, tower.y - 20, "CHOÁNG", "#ffb2bc");
         }
       }
-      boss.abilityTimers.shockwave = 9;
+      boss.abilityTimers.shockwave = cooldowns.shockwave;
       App.Effects.addExplosion(state, boss.x, boss.y, 54, "rgba(216,96,163,0.4)");
       state.boss.shakeTimer = 0.35;
     }
 
     if (boss.abilityTimers.armorMode <= 0) {
-      boss.abilityTimers.armorMode = 11;
+      boss.abilityTimers.armorMode = cooldowns.armorMode;
       boss.abilityTimers.armorModeActive = 3.6;
       App.Effects.addFloatingText(state, boss.x - 10, boss.y - 20, "GIÁP CƯỜNG HÓA", "#ffd699");
     }
@@ -538,6 +555,20 @@
 
     applyCommanderAura(state);
 
+    const triggerBossBreach = (boss) => {
+      if (state.mode !== "playing") {
+        return;
+      }
+      state.mode = "result";
+      state.result.state = "gameOver";
+      state.result.reason = "Boss đã lọt vào căn cứ.";
+      state.wavePhase = "ended";
+      state.bus.emit(config.eventNames.GAME_OVER, {
+        enemyId: boss.id,
+        reason: "boss-breach",
+      });
+    };
+
     for (const enemy of state.enemies) {
       enemy.tick(dt);
       if (!enemy.isAlive()) {
@@ -552,12 +583,24 @@
 
       if (targetInfo) {
         enemyShoot(state, enemy, targetInfo);
+        if (enemy.isBoss) {
+          // Boss keeps advancing while firing, instead of standing still.
+          moveEnemyOnPath(enemy, mapPath, dt * 0.9);
+          if (enemy.reachedBase) {
+            triggerBossBreach(enemy);
+            return;
+          }
+        }
         continue;
       }
 
       moveEnemyOnPath(enemy, mapPath, dt);
 
       if (enemy.reachedBase) {
+        if (enemy.isBoss) {
+          triggerBossBreach(enemy);
+          return;
+        }
         if (enemy.canAttackStructures) {
           if (enemy.canShoot()) {
             enemyShoot(state, enemy, { target: state.base, type: "base" });
@@ -574,6 +617,9 @@
     update(state, dt) {
       updateTowers(state, dt);
       updateEnemies(state, dt);
+      if (state.mode !== "playing") {
+        return;
+      }
       App.collisionSystem.updateProjectiles(state, dt);
     },
   };

@@ -1,38 +1,28 @@
-﻿(function () {
+(function () {
     const App = (window.App = window.App || {});
 
-    const BASE_POOL = [
-        "basicSoldier",
-        "fastScout",
-        "armoredInfantry",
+    const BASIC_POOL = ["basicSoldier", "fastScout", "armoredInfantry"];
+    const MEDIUM_POOL_EARLY = ["sniperEnemy", "shieldBearer", "heavyGunner"];
+    const MEDIUM_POOL_FULL = [
         "sniperEnemy",
-    ];
-    const MID_POOL = [
+        "shieldBearer",
         "heavyGunner",
         "commander",
         "apcVehicle",
-        "shieldBearer",
         "flameTrooper",
     ];
-    const LATE_POOL = [
-        "tank",
-        "rocketVehicle",
-        "heavyGunner",
-        "mortarTruck",
-        "droneSwarm",
-    ];
-    const ELITE_POOL = [
-        "heavyGunner",
-        "commander",
-        "apcVehicle",
-        "shieldBearer",
-        "flameTrooper",
-        "tank",
-        "rocketVehicle",
-        "mortarTruck",
-        "droneSwarm",
-    ];
+    const HIGH_POOL_EARLY = ["tank", "rocketVehicle"];
+    const HIGH_POOL_FULL = ["tank", "rocketVehicle", "mortarTruck", "droneSwarm"];
     const BOSS_POOL = ["supremeBoss", "ironBehemothBoss", "shadowPhantomBoss"];
+    const FIXED_WAVE_PLANS = {
+        1: { total: 30, basic: 30, medium: 0, high: 0 },
+        2: { total: 40, basic: 25, medium: 15, high: 0 },
+        3: { total: 50, basic: 25, medium: 25, high: 0 },
+        4: { total: 58, basic: 19, medium: 19, high: 20 },
+        5: { total: 64, basic: 21, medium: 21, high: 22 },
+        6: { total: 70, basic: 23, medium: 23, high: 24 },
+        7: { total: 76, basic: 25, medium: 25, high: 26 },
+    };
 
     function pseudoRandom(seed) {
         const x = Math.sin(seed * 712.17) * 10000;
@@ -44,61 +34,68 @@
         return pool[Math.max(0, Math.min(pool.length - 1, idx))];
     }
 
-    function buildSpawnPool(wave) {
-        const pool = [...BASE_POOL];
-
-        if (wave >= 2) {
-            pool.push(...MID_POOL);
-        }
-        if (wave >= 3) {
-            pool.push(...LATE_POOL);
-        }
-        if (wave >= 4) {
-            pool.push(
-                "tank",
-                "rocketVehicle",
-                "commander",
-                "flameTrooper",
-                "mortarTruck",
-            );
+    function getWaveComposition(wave) {
+        if (FIXED_WAVE_PLANS[wave]) {
+            return { ...FIXED_WAVE_PLANS[wave] };
         }
 
-        return pool;
+        const baseTotal = FIXED_WAVE_PLANS[7].total;
+        const extraWave = Math.max(0, wave - 7);
+        const total = baseTotal + extraWave * 8;
+        const highRatio = Math.min(0.42, 0.34 + extraWave * 0.015);
+        const mediumRatio = 0.34;
+
+        const high = Math.round(total * highRatio);
+        const medium = Math.round(total * mediumRatio);
+        const basic = Math.max(0, total - high - medium);
+
+        return { total, basic, medium, high };
     }
 
-    function pickEnemyType(spawnPool, wave, spawnIndex) {
-        const seed = wave * 191 + spawnIndex * 37;
-        let picked = pickFromPool(spawnPool, seed);
-        const elitePool = spawnPool.filter((type) => ELITE_POOL.includes(type));
-        const eliteChance = Math.min(0.25 + (wave - 1) * 0.09, 0.92);
+    function getCategoryPool(category, wave) {
+        if (category === "basic") {
+            return BASIC_POOL;
+        }
+        if (category === "medium") {
+            return wave >= 4 ? MEDIUM_POOL_FULL : MEDIUM_POOL_EARLY;
+        }
+        return wave >= 6 ? HIGH_POOL_FULL : HIGH_POOL_EARLY;
+    }
 
-        if (elitePool.length > 0 && pseudoRandom(seed + 911) < eliteChance) {
-            picked = pickFromPool(elitePool, seed + 97);
+    function buildCategoryList(composition) {
+        const list = [];
+        for (let i = 0; i < composition.basic; i += 1) {
+            list.push("basic");
         }
+        for (let i = 0; i < composition.medium; i += 1) {
+            list.push("medium");
+        }
+        for (let i = 0; i < composition.high; i += 1) {
+            list.push("high");
+        }
+        return list;
+    }
 
-        if (wave >= 2 && spawnIndex % 7 === 0) {
-            picked = "sniperEnemy";
+    function shuffleWithSeed(list, seed) {
+        const out = list.slice();
+        for (let i = out.length - 1; i > 0; i -= 1) {
+            const j = Math.floor(pseudoRandom(seed + i * 19.7) * (i + 1));
+            const tmp = out[i];
+            out[i] = out[j];
+            out[j] = tmp;
         }
-        if (wave >= 3 && spawnIndex % 5 === 0) {
-            picked = "heavyGunner";
-        }
-        if (wave >= 4 && spawnIndex % 4 === 0) {
-            picked = "apcVehicle";
-        }
-        if (wave >= 5 && spawnIndex % 3 === 0) {
-            picked = "tank";
-        }
-        if (wave >= 6 && spawnIndex % 6 === 0) {
-            picked = "droneSwarm";
-        }
-        if (wave >= 7 && spawnIndex % 5 === 0) {
-            picked = "mortarTruck";
-        }
-        if (wave >= 7 && elitePool.length > 0 && spawnIndex % 2 === 0) {
-            picked = pickFromPool(elitePool, seed + 2041);
-        }
+        return out;
+    }
 
-        return picked;
+    function buildSpawnPlan(wave, composition) {
+        const categories = shuffleWithSeed(
+            buildCategoryList(composition),
+            wave * 131.3,
+        );
+        return categories.map((category, index) => {
+            const pool = getCategoryPool(category, wave);
+            return pickFromPool(pool, wave * 911 + index * 37.3);
+        });
     }
 
     function buildWave(wave) {
@@ -106,19 +103,16 @@
         const globalWave = wave;
         const durationSec = config.wave.durationSec;
         const tier = Math.floor((wave - 1) / 3);
+        const composition = getWaveComposition(wave);
+        const enemyCount = composition.total;
+        const spawnPlan = buildSpawnPlan(wave, composition);
+        const normalSpawnWindowSec = 24;
 
-        const spawnPool = buildSpawnPool(wave);
         const spawnInterval = Math.max(
-            0.12,
-            config.wave.baseSpawnInterval - wave * 0.015,
+            0.24,
+            normalSpawnWindowSec / Math.max(1, enemyCount),
         );
-        const estimatedSpawnCount = Math.floor(durationSec / spawnInterval);
         const bossType = BOSS_POOL[(wave - 1) % BOSS_POOL.length];
-
-        const bonusByWave =
-            Math.floor(estimatedSpawnCount * 0.2) +
-            wave * config.scaling.spawnGrowthPerWave;
-        const enemyCount = estimatedSpawnCount + bonusByWave;
 
         return {
             wave,
@@ -127,12 +121,16 @@
             tier,
             durationSec,
             spawnInterval,
-            spawnPool,
+            spawnPlan,
+            composition,
             bossType,
-            bossSpawnAtSec: 18,
+            bossSpawnAtSec: 24,
             earlyReward: config.wave.earlyStartRewardBase + wave * 12,
             pickEnemyType(spawnIndex) {
-                return pickEnemyType(spawnPool, wave, spawnIndex);
+                if (spawnIndex < spawnPlan.length) {
+                    return spawnPlan[spawnIndex];
+                }
+                return spawnPlan[spawnPlan.length - 1] || "basicSoldier";
             },
         };
     }

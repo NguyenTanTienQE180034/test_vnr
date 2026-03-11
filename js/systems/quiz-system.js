@@ -81,6 +81,10 @@
         runtime.answered = true;
         const q = App.questionsData[runtime.activeQuestionIndex];
         const correct = selectedIndex === q.correctIndex;
+        const correctAnswerText = q.answers[q.correctIndex] || "";
+        const correctAnswerLabel = `${String.fromCharCode(
+            65 + q.correctIndex,
+        )}. ${correctAnswerText}`;
 
         state.quizUsedIndexes.push(runtime.activeQuestionIndex);
 
@@ -91,6 +95,8 @@
             correctIndex: q.correctIndex,
             question: q.question,
             explanation: q.explanation,
+            correctAnswerLabel,
+            correctAnswerText,
             reward: 0,
             cpGain: 0,
         };

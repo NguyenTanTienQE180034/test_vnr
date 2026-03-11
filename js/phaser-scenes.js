@@ -2277,10 +2277,13 @@
             this.quizCooldownTicker = null;
         }
 
-        updateWrongAnswerFeedback(explanation) {
+        updateWrongAnswerFeedback(explanation, correctAnswerLabel) {
             const remain = Math.max(0, App.state.quizCooldown || 0);
+            const correctLine = correctAnswerLabel
+                ? `Đáp án đúng: ${correctAnswerLabel}\n`
+                : "";
             const baseText =
-                `Đáp án sai: Không nhận được tiếp tế. ` +
+                `${correctLine}Đáp án sai: Không nhận được tiếp tế. ` +
                 `Trả lời lại sau: ${remain.toFixed(1)}s.`;
             this.feedback.setColor("#ff8e95");
             this.feedback.setText(
@@ -2288,7 +2291,7 @@
             );
         }
 
-        beginWrongAnswerCooldown(explanation) {
+        beginWrongAnswerCooldown(explanation, correctAnswerLabel) {
             this.stopQuizCooldownTicker();
             const tick = () => {
                 if (this.currentType !== "quiz" || !App.modalState.active) {
@@ -2296,7 +2299,10 @@
                     return;
                 }
 
-                this.updateWrongAnswerFeedback(explanation);
+                this.updateWrongAnswerFeedback(
+                    explanation,
+                    correctAnswerLabel,
+                );
 
                 if ((App.state.quizCooldown || 0) > 0.01) {
                     return;
@@ -2460,7 +2466,7 @@
                 y += height + spacing;
             }
 
-            this.feedback.setPosition(left, VIEW.height / 2 + 164);
+            this.feedback.setPosition(left, VIEW.height / 2 + 138);
             if (carryFeedback) {
                 this.feedback.setColor("#7cff9e");
                 this.feedback.setText(carryFeedback);
@@ -2496,6 +2502,7 @@
             this.show("quiz");
             this.title.setText("Câu hỏi tiếp tế");
             this.feedback.setText("");
+            this.btnClose.setPosition(VIEW.width / 2, VIEW.height / 2 + 240);
             this.btnClose.bg.removeAllListeners("pointerdown");
             this.btnClose.bg.on("pointerdown", () => {
                 App.quizSystem.closeQuiz();
@@ -2518,8 +2525,10 @@
             }
             if (result.correct) {
                 this.feedback.setColor("#7cff9e");
-                this.feedback.setText(`Correct! +${result.reward} Supplies`);
-                this.time.delayedCall(420, () => {
+                this.feedback.setText(
+                    `Correct! +${result.reward} Supplies\nĐáp án đúng: ${result.correctAnswerLabel}\n${result.explanation || ""}`,
+                );
+                this.time.delayedCall(2200, () => {
                     if (this.currentType !== "quiz" || !App.modalState.active) {
                         return;
                     }
@@ -2546,9 +2555,12 @@
             } else {
                 this.feedback.setColor("#ff8e95");
                 this.feedback.setText(
-                    `Đáp án sai: Không nhận được tiếp tế. Được trả lời lại sau: ${App.config.quiz.wrongCooldown}s.\n${result.explanation}`,
+                    `Đáp án đúng: ${result.correctAnswerLabel}\nĐáp án sai: Không nhận được tiếp tế. Được trả lời lại sau: ${App.config.quiz.wrongCooldown}s.\n${result.explanation || ""}`,
                 );
-                this.beginWrongAnswerCooldown(result.explanation || "");
+                this.beginWrongAnswerCooldown(
+                    result.explanation || "",
+                    result.correctAnswerLabel,
+                );
                 this.btnClose.setLabel("Close");
                 this.btnClose.setEnabled(true);
                 this.btnClose.setVisible(true);
@@ -2558,6 +2570,7 @@
         openHelp() {
             this.show("help");
             this.title.setText("Hướng dẫn chiến đấu");
+            this.btnClose.setPosition(VIEW.width / 2, VIEW.height / 2 + 220);
             this.body.setText(
                 "- Kéo các trụ phòng thủ (tower) từ bảng bên phải vào các ô trên bản đồ.\n- Nhấn nút Nhận tiếp tế  để nhận tiếp tế (supplies).\n- Nhấp vào trụ để nâng cấp / sửa chữa / bán.\n- Một số kẻ địch có thể tấn công công trình của bạn.\n- Chế độ Endless luôn có Boss.\n- Cờ Việt Nam = phe người chơi, Cờ Mỹ = phe địch.",
             );
@@ -2616,6 +2629,7 @@
         openAntiCheat(reason) {
             this.show("anti");
             this.title.setText("Developer tools locked");
+            this.btnClose.setPosition(VIEW.width / 2, VIEW.height / 2 + 220);
             this.body.setText(
                 `Game paused because devtools/inspect was detected.\nClose devtools and press close to continue.\n\nDetected by: ${reason || "unknown"}`,
             );
