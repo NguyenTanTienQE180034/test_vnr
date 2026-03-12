@@ -9,7 +9,9 @@
     const enemy = new App.Enemy(enemyType, waveSpec);
     enemy.setPosition(mapDef.spawn.x, mapDef.spawn.y);
     state.enemies.push(enemy);
-    state.spawnedInWave += 1;
+    if (!enemy.isBoss) {
+      state.spawnedInWave += 1;
+    }
 
     if (enemy.isBoss) {
       state.boss.activeId = enemy.id;
@@ -51,7 +53,10 @@
     }
 
     state.wavePhase = "combat";
-    state.spawnTimer = 0.06;
+    const firstSpawnDelay = state.currentWaveSpec
+      ? Math.max(0.2, state.currentWaveSpec.spawnInterval * 0.75)
+      : 0.35;
+    state.spawnTimer = firstSpawnDelay;
     state.waveTimer = 0;
 
     state.bus.emit(config.eventNames.WAVE_START, {
@@ -94,14 +99,25 @@
 
     state.waveTimer += dt;
 
-    state.spawnTimer -= dt;
-    while (state.spawnTimer <= 0) {
-      const type = spec.pickEnemyType(state.spawnedInWave);
-      spawnEnemyByType(state, type);
-      state.spawnTimer += spec.spawnInterval;
+    const canSpawnNormal =
+      !state.bossSpawnedInWave &&
+      state.waveTimer <= spec.durationSec &&
+      state.spawnedInWave < spec.enemyCount;
+
+    if (canSpawnNormal) {
+      state.spawnTimer -= dt;
+      while (state.spawnTimer <= 0 && state.spawnedInWave < spec.enemyCount) {
+        const type = spec.pickEnemyType(state.spawnedInWave);
+        spawnEnemyByType(state, type);
+        state.spawnTimer += spec.spawnInterval;
+      }
     }
 
-    if (!state.bossSpawnedInWave && state.waveTimer >= spec.bossSpawnAtSec) {
+    const shouldSpawnBoss =
+      !state.bossSpawnedInWave &&
+      (state.spawnedInWave >= spec.enemyCount || state.waveTimer >= spec.bossSpawnAtSec);
+
+    if (shouldSpawnBoss) {
       spawnEnemyByType(state, spec.bossType);
     }
 

@@ -36,14 +36,81 @@
                 ? 14
                 : 13;
 
-      const waveMultiplier = this.isBoss ? config.scaling.bossWaveMultiplier : config.scaling.enemyWaveMultiplier;
-      const statScale = Math.pow(waveMultiplier, waveIndex);
-      const safeScale = Number.isFinite(statScale) ? statScale : Number.MAX_SAFE_INTEGER;
+      const scaling = config.scaling || {};
+      const hpGrowth = this.isBoss
+        ? scaling.bossHpGrowth ?? 1.22
+        : scaling.enemyHpGrowth ?? 1.18;
+      const damageGrowth = this.isBoss
+        ? scaling.bossDamageGrowth ?? 1.12
+        : scaling.enemyDamageGrowth ?? 1.1;
+      const speedGrowthPerWave = this.isBoss
+        ? scaling.bossSpeedGrowthPerWave ?? 0.01
+        : scaling.enemySpeedGrowthPerWave ?? 0.012;
+      const armorStep = this.isBoss
+        ? scaling.bossArmorStep ?? 4
+        : scaling.enemyArmorStep ?? 2;
+      const armorEvery = Math.max(
+        1,
+        this.isBoss
+          ? scaling.bossArmorEvery ?? 2
+          : scaling.enemyArmorEvery ?? 3,
+      );
 
-      let hp = def.hp * safeScale;
-      let damage = def.damage * safeScale;
-      let armor = def.armor * safeScale;
-      let speed = def.speed * safeScale;
+      const hpScale = Math.pow(hpGrowth, waveIndex);
+      const damageScale = Math.pow(damageGrowth, waveIndex);
+      const speedScale = 1 + waveIndex * speedGrowthPerWave;
+      const armorBonus = Math.floor(waveIndex / armorEvery) * armorStep;
+
+      let hp = def.hp * hpScale;
+      let damage = def.damage * damageScale;
+      let armor = def.armor + armorBonus;
+      let speed = def.speed * speedScale;
+
+      this.bossLevel = this.isBoss ? Math.max(1, Math.ceil(globalWave / 2)) : 0;
+      if (this.isBoss) {
+        const bossDifficultyStep = Math.min(6, waveIndex);
+        const hpMultiplier = 0.58 + bossDifficultyStep * 0.11;
+        const damageMultiplier = 0.52 + bossDifficultyStep * 0.085;
+        const speedMultiplier = 0.66 + bossDifficultyStep * 0.02;
+        const armorGrowth = Math.floor(bossDifficultyStep / 2) * 6;
+
+        hp = def.hp * hpMultiplier;
+        damage = def.damage * damageMultiplier;
+        armor = def.armor + armorGrowth;
+        speed = def.speed * speedMultiplier;
+
+        // Keep boss difficulty ramp stable across different boss archetypes.
+        const hpFloorByWave = 3000 + bossDifficultyStep * 700;
+        const damageFloorByWave = 92 + bossDifficultyStep * 18;
+        const armorFloorByWave = 60 + bossDifficultyStep * 6;
+        hp = Math.max(hp, hpFloorByWave);
+        damage = Math.max(damage, damageFloorByWave);
+        armor = Math.max(armor, armorFloorByWave);
+        const speedCapByWave = 34 + bossDifficultyStep * 2.2;
+        speed = Math.min(speed, speedCapByWave);
+
+        this.bossArmorModeBonus =
+          36 + Math.floor(bossDifficultyStep / 2) * 6;
+
+        const abilityTempoScale = Math.max(
+          0.74,
+          1 - bossDifficultyStep * 0.045,
+        );
+        this.bossAbilityCooldowns = {
+          summon: Math.max(6.5, 10 * abilityTempoScale),
+          missile: Math.max(5, 7.2 * abilityTempoScale),
+          shockwave: Math.max(6.5, 9.2 * abilityTempoScale),
+          armorMode: Math.max(7.5, 11.4 * abilityTempoScale),
+        };
+      } else {
+        this.bossArmorModeBonus = 0;
+        this.bossAbilityCooldowns = {
+          summon: 10,
+          missile: 7,
+          shockwave: 9,
+          armorMode: 11,
+        };
+      }
 
       this.maxHp = Math.floor(hp);
       this.hp = Math.floor(hp);
@@ -72,11 +139,13 @@
       this.dead = false;
 
       this.phase = 1;
+      this.allowSummonMinions = false;
+      const bossCooldowns = this.bossAbilityCooldowns;
       this.abilityTimers = {
-        summon: 10,
-        missile: 7,
-        shockwave: 9,
-        armorMode: 11,
+        summon: bossCooldowns.summon,
+        missile: bossCooldowns.missile,
+        shockwave: bossCooldowns.shockwave,
+        armorMode: bossCooldowns.armorMode,
         armorModeActive: 0,
       };
 
@@ -129,7 +198,10 @@
     }
 
     getArmor() {
-      const extra = this.isBoss && this.abilityTimers.armorModeActive > 0 ? 80 : 0;
+      const extra =
+        this.isBoss && this.abilityTimers.armorModeActive > 0
+          ? this.bossArmorModeBonus
+          : 0;
       return this.armor + extra;
     }
 

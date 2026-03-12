@@ -10,7 +10,11 @@
       return item.correctIndex;
     }
 
-    const rawAnswer = item.answer ?? item.correctAnswer;
+    const rawAnswer =
+      item.answer ??
+      item.correctAnswer ??
+      (Array.isArray(item.answers) ? undefined : item.answers) ??
+      item.correct;
 
     if (Number.isInteger(rawAnswer) && rawAnswer >= 0 && rawAnswer < answers.length) {
       return rawAnswer;
@@ -53,7 +57,12 @@
       question,
       answers,
       correctIndex,
-      explanation: typeof item.explanation === "string" ? item.explanation.trim() : "",
+      explanation:
+        typeof item.explanation === "string"
+          ? item.explanation.trim()
+          : typeof item.explain === "string"
+            ? item.explain.trim()
+            : "",
     };
   }
 
