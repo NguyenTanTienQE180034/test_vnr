@@ -2528,30 +2528,28 @@
                 this.feedback.setText(
                     `Correct! +${result.reward} Supplies\nĐáp án đúng: ${result.correctAnswerLabel}\n${result.explanation || ""}`,
                 );
-                this.time.delayedCall(2200, () => {
-                    if (this.currentType !== "quiz" || !App.modalState.active) {
-                        return;
+                if (this.currentType !== "quiz" || !App.modalState.active) {
+                    return;
+                }
+                const next = App.quizSystem.openQuiz(App.state);
+                if (!next.ok) {
+                    if (next.reason === "cooldown") {
+                        this.feedback.setColor("#ff8e95");
+                        this.feedback.setText(
+                            `Quiz cooldown ${Math.ceil(next.cooldown || 0)}s.`,
+                        );
+                    } else {
+                        this.feedback.setColor("#9fb7d3");
+                        this.feedback.setText(
+                            "No more question. You can close quiz.",
+                        );
                     }
-                    const next = App.quizSystem.openQuiz(App.state);
-                    if (!next.ok) {
-                        if (next.reason === "cooldown") {
-                            this.feedback.setColor("#ff8e95");
-                            this.feedback.setText(
-                                `Quiz cooldown ${Math.ceil(next.cooldown || 0)}s.`,
-                            );
-                        } else {
-                            this.feedback.setColor("#9fb7d3");
-                            this.feedback.setText(
-                                "No more question. You can close quiz.",
-                            );
-                        }
-                        return;
-                    }
-                    this.renderQuizQuestion(
-                        next,
-                        `Correct! +${result.reward} Supplies `,
-                    );
-                });
+                    return;
+                }
+                this.renderQuizQuestion(
+                    next,
+                    `Correct! +${result.reward} Supplies `,
+                );
             } else {
                 this.feedback.setColor("#ff8e95");
                 this.feedback.setText(
